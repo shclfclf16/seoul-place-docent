@@ -1,0 +1,223 @@
+TAP version 13
+# (node:11440) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: real MCP route, five signed Seoul locations, all network denied: no model keys or requests
+ok 1 - real MCP route, five signed Seoul locations, all network denied: no model keys or requests
+  ---
+  duration_ms: 206.6977
+  type: 'test'
+  ...
+# 성수동1가: 69 photo rows → 69 groups, 73 scenes
+# 북아현동: 105 photo rows → 87 groups, 87 scenes
+# 가회동: 61 photo rows → 61 groups, 64 scenes
+# 한강로1가: 77 photo rows → 24 groups, 24 scenes
+# 수유동: 69 photo rows → 69 groups, 70 scenes
+# (node:35428) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: historical date takes precedence over capture/publication date and keeps uncertainty
+ok 2 - historical date takes precedence over capture/publication date and keeps uncertainty
+  ---
+  duration_ms: 2.1378
+  type: 'test'
+  ...
+# Subtest: cuts of one museum record and reused previews group; collection pages do not collapse unrelated records
+ok 3 - cuts of one museum record and reused previews group; collection pages do not collapse unrelated records
+  ---
+  duration_ms: 1.8328
+  type: 'test'
+  ...
+# Subtest: reading text removes evidence markers without removing uncertainty and uses at most three complete sentences
+ok 4 - reading text removes evidence markers without removing uncertainty and uses at most three complete sentences
+  ---
+  duration_ms: 1.3744
+  type: 'test'
+  ...
+# Subtest: five neighborhoods retain chronological scope; missing records stay empty
+ok 5 - five neighborhoods retain chronological scope; missing records stay empty
+  ---
+  duration_ms: 81.0934
+  type: 'test'
+  ...
+# Subtest: story never includes candidate/conflicting records and district fallback stays district scoped
+ok 6 - story never includes candidate/conflicting records and district fallback stays district scoped
+  ---
+  duration_ms: 0.46
+  type: 'test'
+  ...
+# Subtest: local GPS parser supports both TIFF byte orders and safely rejects no-GPS/malformed files
+ok 7 - local GPS parser supports both TIFF byte orders and safely rejects no-GPS/malformed files
+  ---
+  duration_ms: 0.7252
+  type: 'test'
+  ...
+# Subtest: translation validation keeps IDs and years and rejects inserted historical dates
+ok 8 - translation validation keeps IDs and years and rejects inserted historical dates
+  ---
+  duration_ms: 0.6525
+  type: 'test'
+  ...
+# Subtest: manual photos need display permission, https links, a license and an institution
+ok 9 - manual photos need display permission, https links, a license and an institution
+  ---
+  duration_ms: 0.2065
+  type: 'test'
+  ...
+# Subtest: a manually registered photo becomes a dong-level photo scene for a dong without photo data
+ok 10 - a manually registered photo becomes a dong-level photo scene for a dong without photo data
+  ---
+  duration_ms: 0.5394
+  type: 'test'
+  ...
+# Subtest: one scene per year, no repeated photo or text, focus records first
+ok 11 - one scene per year, no repeated photo or text, focus records first
+  ---
+  duration_ms: 10.3853
+  type: 'test'
+  ...
+# (node:35784) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: map click preserves its exact point, parcel identity and separate administrative dong
+ok 12 - map click preserves its exact point, parcel identity and separate administrative dong
+  ---
+  duration_ms: 3.3689
+  type: 'test'
+  ...
+# Subtest: no building address still resolves the legal dong without inventing a road address or parcel
+ok 13 - no building address still resolves the legal dong without inventing a road address or parcel
+  ---
+  duration_ms: 1.8964
+  type: 'test'
+  ...
+# Subtest: invalid points and actual non-Seoul region codes are rejected before address selection
+ok 14 - invalid points and actual non-Seoul region codes are rejected before address selection
+  ---
+  duration_ms: 0.809
+  type: 'test'
+  ...
+# Subtest: reverse lookup verifies the official address candidate and uses secret headers only
+ok 15 - reverse lookup verifies the official address candidate and uses secret headers only
+  ---
+  duration_ms: 51.7962
+  type: 'test'
+  ...
+# Subtest: address-search failures preserve the selected point and neighborhood lookup
+ok 16 - address-search failures preserve the selected point and neighborhood lookup
+  ---
+  duration_ms: 4.3634
+  type: 'test'
+  ...
+# Subtest: provider authentication, quota and malformed responses remain distinct errors
+ok 17 - provider authentication, quota and malformed responses remain distinct errors
+  ---
+  duration_ms: 4.0622
+  type: 'test'
+  ...
+# Subtest: MCP exposes evidence preparation, GPS fallback and mechanical validation
+ok 18 - MCP exposes evidence preparation, GPS fallback and mechanical validation
+  ---
+  duration_ms: 2.8257
+  type: 'test'
+  ...
+# Subtest: grouped history pagination uses the actual scene count
+ok 19 - grouped history pagination uses the actual scene count
+  ---
+  duration_ms: 0.2335
+  type: 'test'
+  ...
+# (node:8308) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: discovery advertises the Sites protocol and tools capability
+ok 20 - discovery advertises the Sites protocol and tools capability
+  ---
+  duration_ms: 6.3298
+  type: 'test'
+  ...
+# Subtest: tools are discoverable and calls return MCP content blocks
+ok 21 - tools are discoverable and calls return MCP content blocks
+  ---
+  duration_ms: 0.5203
+  type: 'test'
+  ...
+# Subtest: invalid envelopes and unknown methods return JSON-RPC errors
+ok 22 - invalid envelopes and unknown methods return JSON-RPC errors
+  ---
+  duration_ms: 0.5288
+  type: 'test'
+  ...
+# Subtest: notifications never execute tools or return a response
+ok 23 - notifications never execute tools or return a response
+  ---
+  duration_ms: 0.2179
+  type: 'test'
+  ...
+# Subtest: unknown tools and non-object arguments are rejected before execution
+ok 24 - unknown tools and non-object arguments are rejected before execution
+  ---
+  duration_ms: 0.6048
+  type: 'test'
+  ...
+# Subtest: unexpected tool failures are safe MCP errors without internal exception text
+ok 25 - unexpected tool failures are safe MCP errors without internal exception text
+  ---
+  duration_ms: 0.4017
+  type: 'test'
+  ...
+# Subtest: initialize negotiates supported legacy versions and supplies client AI instructions
+ok 26 - initialize negotiates supported legacy versions and supplies client AI instructions
+  ---
+  duration_ms: 0.7691
+  type: 'test'
+  ...
+# (node:9908) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: question words select matching records within a bounded chronological packet
+ok 27 - question words select matching records within a bounded chronological packet
+  ---
+  duration_ms: 3.4582
+  type: 'test'
+  ...
+# Subtest: legacy generation returns evidence without any model request or old answer cache
+ok 28 - legacy generation returns evidence without any model request or old answer cache
+  ---
+  duration_ms: 3.9609
+  type: 'test'
+  ...
+# Subtest: no evidence returns honest no_records, never a fabricated story
+ok 29 - no evidence returns honest no_records, never a fabricated story
+  ---
+  duration_ms: 0.2669
+  type: 'test'
+  ...
+# Subtest: unknown citations including mixed known/unknown, unsupported numbers and long scenes are rejected
+ok 30 - unknown citations including mixed known/unknown, unsupported numbers and long scenes are rejected
+  ---
+  duration_ms: 2.3016
+  type: 'test'
+  ...
+# Subtest: KPI separates retrieval from validation and never invents client completion or token usage
+ok 31 - KPI separates retrieval from validation and never invents client completion or token usage
+  ---
+  duration_ms: 1.2157
+  type: 'test'
+  ...
+# Subtest: metrics failure does not block evidence retrieval
+ok 32 - metrics failure does not block evidence retrieval
+  ---
+  duration_ms: 2.6132
+  type: 'test'
+  ...
+# Subtest: MCP module has no model-provider capability or answer cache reuse
+ok 33 - MCP module has no model-provider capability or answer cache reuse
+  ---
+  duration_ms: 1.2269
+  type: 'test'
+  ...
+1..33
+# tests 33
+# suites 0
+# pass 33
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1493.2281

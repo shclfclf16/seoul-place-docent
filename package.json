@@ -16,7 +16,8 @@
     "dev:vercel": "next dev",
     "start:vercel": "next start",
     "test": "node --experimental-transform-types --import ./tests/ts-resolver.mjs --test tests/*.test.mjs",
-    "typecheck": "tsc --noEmit --incremental false"
+    "typecheck": "tsc --noEmit --incremental false",
+    "test:audit": "node --experimental-transform-types --import ./tests/ts-resolver.mjs --test tests/client-ai-audit.test.ts tests/mcp-protocol.test.mjs tests/mcp-client-contract.test.mjs tests/place-answer.test.mjs tests/docent-story.test.mjs tests/map-address.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
