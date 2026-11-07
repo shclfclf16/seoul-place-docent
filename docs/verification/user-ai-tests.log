@@ -1,0 +1,1999 @@
+TAP version 13
+# (node:20856) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: AI explanation inherits scope and links from server evidence
+ok 1 - AI explanation inherits scope and links from server evidence
+  ---
+  duration_ms: 1.9148
+  type: 'test'
+  ...
+# Subtest: invented source IDs and nonmatching quotes are excluded
+ok 2 - invented source IDs and nonmatching quotes are excluded
+  ---
+  duration_ms: 0.324
+  type: 'test'
+  ...
+# Subtest: neighborhood evidence cannot be promoted to an event at the selected building
+ok 3 - neighborhood evidence cannot be promoted to an event at the selected building
+  ---
+  duration_ms: 0.2154
+  type: 'test'
+  ...
+# Subtest: years absent from the cited evidence are excluded
+ok 4 - years absent from the cited evidence are excluded
+  ---
+  duration_ms: 0.3043
+  type: 'test'
+  ...
+# Subtest: an entirely unsupported response is rejected instead of displayed
+ok 5 - an entirely unsupported response is rejected instead of displayed
+  ---
+  duration_ms: 0.6224
+  type: 'test'
+  ...
+# Subtest: a different road address is never evidence for the current building
+ok 6 - a different road address is never evidence for the current building
+  ---
+  duration_ms: 5.1854
+  type: 'test'
+  ...
+# Subtest: historical area candidates retain the unverified boundary relation
+ok 7 - historical area candidates retain the unverified boundary relation
+  ---
+  duration_ms: 0.5411
+  type: 'test'
+  ...
+# Subtest: OpenAI request is structured, bounded and does not store the response
+ok 8 - OpenAI request is structured, bounded and does not store the response
+  ---
+  duration_ms: 62.1527
+  type: 'test'
+  ...
+# Subtest: quota failures return an actionable message without revealing provider error text
+ok 9 - quota failures return an actionable message without revealing provider error text
+  ---
+  duration_ms: 7.778
+  type: 'test'
+  ...
+# Subtest: a disabled AI key cannot reuse a cached result
+ok 10 - a disabled AI key cannot reuse a cached result
+  ---
+  duration_ms: 0.9676
+  type: 'test'
+  ...
+# Subtest: stored AI explanations are returned as cached and expire after the TTL
+ok 11 - stored AI explanations are returned as cached and expire after the TTL
+  ---
+  duration_ms: 50.0101
+  type: 'test'
+  ...
+# Subtest: a missing or failing D1 never blocks AI explanations
+ok 12 - a missing or failing D1 never blocks AI explanations
+  ---
+  duration_ms: 0.4055
+  type: 'test'
+  ...
+# Subtest: only fresh generations count toward the rate limit; stored answers and repeats are free, refresh regenerates
+ok 13 - only fresh generations count toward the rate limit; stored answers and repeats are free, refresh regenerates
+  ---
+  duration_ms: 3.9273
+  type: 'test'
+  ...
+# (node:32528) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:32528) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# Subtest: user-provided research report adds one catalog document without promoting 215 fragments to history
+ok 14 - user-provided research report adds one catalog document without promoting 215 fragments to history
+  ---
+  duration_ms: 202.8687
+  type: 'test'
+  ...
+# Subtest: date parser preserves year, decade, century and estimated range precision
+ok 15 - date parser preserves year, decade, century and estimated range precision
+  ---
+  duration_ms: 1.5192
+  type: 'test'
+  ...
+# Subtest: capture stores original description, raw metadata and attribution without creating historical facts
+ok 16 - capture stores original description, raw metadata and attribution without creating historical facts
+  ---
+  duration_ms: 85.5375
+  type: 'test'
+  ...
+# Subtest: repeating a capture leaves one source, one passage and one version
+ok 17 - repeating a capture leaves one source, one passage and one version
+  ---
+  duration_ms: 198.3686
+  type: 'test'
+  ...
+# Subtest: changed description makes a new immutable capture and version
+ok 18 - changed description makes a new immutable capture and version
+  ---
+  duration_ms: 122.9946
+  type: 'test'
+  ...
+# Subtest: search reaches body-only words and content/date filters exclude uncaptured catalog entries
+ok 19 - search reaches body-only words and content/date filters exclude uncaptured catalog entries
+  ---
+  duration_ms: 121.2447
+  type: 'test'
+  ...
+# Subtest: original capture is refused unless storage permission and item-level rights evidence exist
+ok 20 - original capture is refused unless storage permission and item-level rights evidence exist
+  ---
+  duration_ms: 101.1369
+  type: 'test'
+  ...
+# Subtest: coverage separates catalog-only sources, original text and saved files
+ok 21 - coverage separates catalog-only sources, original text and saved files
+  ---
+  duration_ms: 142.3888
+  type: 'test'
+  ...
+# Subtest: batch size and dates are validated before writes
+ok 22 - batch size and dates are validated before writes
+  ---
+  duration_ms: 249.3068
+  type: 'test'
+  ...
+# Subtest: metadata key order does not duplicate captures while source metadata changes do create a version
+ok 23 - metadata key order does not duplicate captures while source metadata changes do create a version
+  ---
+  duration_ms: 218.6951
+  type: 'test'
+  ...
+# Subtest: open-ended and abbreviated periods are not narrowed to a single year
+ok 24 - open-ended and abbreviated periods are not narrowed to a single year
+  ---
+  duration_ms: 0.5121
+  type: 'test'
+  ...
+# Subtest: collected official corpus imports with item-level rights gates and without promoting captions to historical events
+ok 25 - collected official corpus imports with item-level rights gates and without promoting captions to historical events
+  ---
+  duration_ms: 490.9346
+  type: 'test'
+  ...
+# Subtest: scoped factual abstract stays pending and is not counted as original text or a reviewed history
+ok 26 - scoped factual abstract stays pending and is not counted as original text or a reviewed history
+  ---
+  duration_ms: 83.7171
+  type: 'test'
+  ...
+# Subtest: scoped corpus repeats without duplicating passages and changed scope evidence creates a new version
+ok 27 - scoped corpus repeats without duplicating passages and changed scope evidence creates a new version
+  ---
+  duration_ms: 73.373
+  type: 'test'
+  ...
+# Subtest: removing a dong scope from a newer capture preserves history while clearing current coverage and region search
+ok 28 - removing a dong scope from a newer capture preserves history while clearing current coverage and region search
+  ---
+  duration_ms: 95.3597
+  type: 'test'
+  ...
+# Subtest: scope IDs and exact legal names are validated before any source write
+ok 29 - scope IDs and exact legal names are validated before any source write
+  ---
+  duration_ms: 99.8245
+  type: 'test'
+  ...
+# Subtest: a shared neighborhood name tagged to a district never inflates legal dong coverage
+ok 30 - a shared neighborhood name tagged to a district never inflates legal dong coverage
+  ---
+  duration_ms: 106.0606
+  type: 'test'
+  ...
+# Subtest: metadata-only edits preserve the last captured dong scopes
+ok 31 - metadata-only edits preserve the last captured dong scopes
+  ---
+  duration_ms: 55.6651
+  type: 'test'
+  ...
+# Subtest: curated dong corpus stores 74 short abstracts for 69 legal names without claiming original reuse rights
+ok 32 - curated dong corpus stores 74 short abstracts for 69 legal names without claiming original reuse rights
+  ---
+  duration_ms: 94.6114
+  type: 'test'
+  ...
+# Subtest: new district corpus preserves provenance, uncertain dates and source-specific rights
+ok 33 - new district corpus preserves provenance, uncertain dates and source-specific rights
+  ---
+  duration_ms: 2.7614
+  type: 'test'
+  ...
+# Subtest: combined production corpora yield 234 sources, 309 passages and 147 scoped legal names without promoting abstracts to facts
+ok 34 - combined production corpora yield 234 sources, 309 passages and 147 scoped legal names without promoting abstracts to facts
+  ---
+  duration_ms: 255.2097
+  type: 'test'
+  ...
+# Subtest: fifth corpus distinguishes index evidence, direct document fingerprints and five licensed excerpts
+ok 35 - fifth corpus distinguishes index evidence, direct document fingerprints and five licensed excerpts
+  ---
+  duration_ms: 2.4063
+  type: 'test'
+  ...
+# Subtest: fifth corpus covers 209 legal names in 25 gu while original evidence and shared contexts remain distinct
+ok 36 - fifth corpus covers 209 legal names in 25 gu while original evidence and shared contexts remain distinct
+  ---
+  duration_ms: 216.9166
+  type: 'test'
+  ...
+# Subtest: completion corpus fills precisely the 258 missing names with bounded facts and traceable receipts
+ok 37 - completion corpus fills precisely the 258 missing names with bounded facts and traceable receipts
+  ---
+  duration_ms: 10.6544
+  type: 'test'
+  ...
+# Subtest: complete production corpus gives 467 named dong entries without upgrading facts or duplicating reimports
+ok 38 - complete production corpus gives 467 named dong entries without upgrading facts or duplicating reimports
+  ---
+  duration_ms: 434.8753
+  type: 'test'
+  ...
+# Subtest: historical-name research keeps qualified aliases, catalog evidence and original access distinct
+ok 39 - historical-name research keeps qualified aliases, catalog evidence and original access distinct
+  ---
+  duration_ms: 3.255
+  type: 'test'
+  ...
+# Subtest: historical-name catalog import adds 68 sources without altering passages, facts, files or exact dong coverage
+ok 40 - historical-name catalog import adds 68 sources without altering passages, facts, files or exact dong coverage
+  ---
+  duration_ms: 95.3423
+  type: 'test'
+  ...
+# (node:24952) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: outside-scope homonyms across provinces, historical names and whitespace variants are omitted
+ok 41 - outside-scope homonyms across provinces, historical names and whitespace variants are omitted
+  ---
+  duration_ms: 15.841
+  type: 'test'
+  ...
+# Subtest: Seoul evidence cannot come from a query, institution, dong alone or an ambiguous district
+ok 42 - Seoul evidence cannot come from a query, institution, dong alone or an ambiguous district
+  ---
+  duration_ms: 2.3899
+  type: 'test'
+  ...
+# Subtest: explicit Seoul, current district/dong pairs and historical capital names remain candidates
+ok 43 - explicit Seoul, current district/dong pairs and historical capital names remain candidates
+  ---
+  duration_ms: 0.5745
+  type: 'test'
+  ...
+# Subtest: Gyeonggi records remain eligible with province, municipality, historical or English place names
+ok 44 - Gyeonggi records remain eligible with province, municipality, historical or English place names
+  ---
+  duration_ms: 1.6235
+  type: 'test'
+  ...
+# Subtest: metropolitan cities outside the scope are not inferred to be Gyeonggi
+ok 45 - metropolitan cities outside the scope are not inferred to be Gyeonggi
+  ---
+  duration_ms: 1.1317
+  type: 'test'
+  ...
+# Subtest: explicit photograph location distinguishes a Seoul monument from the event depicted
+ok 46 - explicit photograph location distinguishes a Seoul monument from the event depicted
+  ---
+  duration_ms: 0.5093
+  type: 'test'
+  ...
+# Subtest: all 467 registered dong queries and all provider pages use the same server scope
+ok 47 - all 467 registered dong queries and all provider pages use the same server scope
+  ---
+  duration_ms: 328.5324
+  type: 'test'
+  ...
+# Subtest: photo scope is applied before pagination, including cached lists and downloads
+ok 48 - photo scope is applied before pagination, including cached lists and downloads
+  ---
+  duration_ms: 2.37
+  type: 'test'
+  ...
+# Subtest: new imports cannot relabel explicit non-Seoul titles with a Seoul region tag
+ok 49 - new imports cannot relabel explicit non-Seoul titles with a Seoul region tag
+  ---
+  duration_ms: 0.7605
+  type: 'test'
+  ...
+# Subtest: whitespace normalization cannot invent province abbreviations in legitimate Seoul titles
+ok 50 - whitespace normalization cannot invent province abbreviations in legitimate Seoul titles
+  ---
+  duration_ms: 0.8668
+  type: 'test'
+  ...
+# Subtest: stored research has no confirmed outside-only locations, including raw caption homonyms
+ok 51 - stored research has no confirmed outside-only locations, including raw caption homonyms
+  ---
+  duration_ms: 514.1515
+  type: 'test'
+  ...
+# (node:35492) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:35492) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# Subtest: original observation validates its narrow shape and never accepts a caller-supplied URL or SQL
+ok 52 - original observation validates its narrow shape and never accepts a caller-supplied URL or SQL
+  ---
+  duration_ms: 3.0493
+  type: 'test'
+  ...
+# Subtest: official URLs reject private addresses, credentials, other hosts, ports and cross-institution redirects
+ok 53 - official URLs reject private addresses, credentials, other hosts, ports and cross-institution redirects
+  ---
+  duration_ms: 0.7892
+  type: 'test'
+  ...
+# Subtest: normalized text is inert, bounded, explicit about windows and does not fabricate a missing match
+ok 54 - normalized text is inert, bounded, explicit about windows and does not fabricate a missing match
+  ---
+  duration_ms: 1.915
+  type: 'test'
+  ...
+# Subtest: transport hashes exact response body bytes and sends no service credentials or cookies
+ok 55 - transport hashes exact response body bytes and sends no service credentials or cookies
+  ---
+  duration_ms: 93.0499
+  type: 'test'
+  ...
+# Subtest: redirects are manually constrained and a public response cannot redirect to an arbitrary target
+ok 56 - redirects are manually constrained and a public response cannot redirect to an arbitrary target
+  ---
+  duration_ms: 3.3634
+  type: 'test'
+  ...
+# Subtest: HTTP, non-HTML, oversized, invalid encoding, network and timeout outcomes do not become successful comparisons
+ok 57 - HTTP, non-HTML, oversized, invalid encoding, network and timeout outcomes do not become successful comparisons
+  ---
+  duration_ms: 50.2686
+  type: 'test'
+  ...
+# Subtest: observation and its metadata-only audit preserve content, versions, rights, scope and review state
+ok 58 - observation and its metadata-only audit preserve content, versions, rights, scope and review state
+  ---
+  duration_ms: 34.188
+  type: 'test'
+  ...
+# Subtest: retry reuses the recorded ID without a second fetch or body storage, while changed payload conflicts
+ok 59 - retry reuses the recorded ID without a second fetch or body storage, while changed payload conflicts
+  ---
+  duration_ms: 37.9332
+  type: 'test'
+  ...
+# Subtest: missing, stale and nonofficial registered sources are rejected before any network call
+ok 60 - missing, stale and nonofficial registered sources are rejected before any network call
+  ---
+  duration_ms: 24.0163
+  type: 'test'
+  ...
+# Subtest: concurrent metadata edits cannot append an observation against a stale snapshot
+ok 61 - concurrent metadata edits cannot append an observation against a stale snapshot
+  ---
+  duration_ms: 16.8278
+  type: 'test'
+  ...
+# Subtest: transport failures are audited without inventing content, and audit failures cannot return success
+ok 62 - transport failures are audited without inventing content, and audit failures cannot return success
+  ---
+  duration_ms: 19.9824
+  type: 'test'
+  ...
+# Subtest: observation listing bounds source input and explicitly marks history truncation
+ok 63 - observation listing bounds source input and explicitly marks history truncation
+  ---
+  duration_ms: 12.3173
+  type: 'test'
+  ...
+# (node:2064) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:2064) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# Subtest: correction validates bounded paraphrases, fresh complete evidence and rejects arbitrary fields
+ok 64 - correction validates bounded paraphrases, fresh complete evidence and rejects arbitrary fields
+  ---
+  duration_ms: 77.5683
+  type: 'test'
+  ...
+# Subtest: correction preserves IDs, all source versions, rights, mapping and prior review; new text requires review
+ok 65 - correction preserves IDs, all source versions, rights, mapping and prior review; new text requires review
+  ---
+  duration_ms: 23.2856
+  type: 'test'
+  ...
+# Subtest: correction refuses quotations, transcriptions, attached facts, wrong source and changed review revisions
+ok 66 - correction refuses quotations, transcriptions, attached facts, wrong source and changed review revisions
+  ---
+  duration_ms: 71.4011
+  type: 'test'
+  ...
+# Subtest: audit failure rolls correction and new text back together
+ok 67 - audit failure rolls correction and new text back together
+  ---
+  duration_ms: 20.0986
+  type: 'test'
+  ...
+# Subtest: atomic guard rejects edits to text, scopes, source metadata or latest review between read and commit
+ok 68 - atomic guard rejects edits to text, scopes, source metadata or latest review between read and commit
+  ---
+  duration_ms: 57.3924
+  type: 'test'
+  ...
+# Subtest: two concurrent corrections commit one revision and retry preserves identity
+ok 69 - two concurrent corrections commit one revision and retry preserves identity
+  ---
+  duration_ms: 13.8465
+  type: 'test'
+  ...
+# Subtest: later catalog updates invalidate history active flag and reject stale correction replays
+ok 70 - later catalog updates invalidate history active flag and reject stale correction replays
+  ---
+  duration_ms: 15.0612
+  type: 'test'
+  ...
+# Subtest: correction cannot relabel district context and handles newlines and unicode in canonical snapshots
+ok 71 - correction cannot relabel district context and handles newlines and unicode in canonical snapshots
+  ---
+  duration_ms: 44.7942
+  type: 'test'
+  ...
+# (node:33872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:33872) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# Subtest: passage queue distinguishes actual current content from catalog metadata and bounds cursor/filter input
+ok 72 - passage queue distinguishes actual current content from catalog metadata and bounds cursor/filter input
+  ---
+  duration_ms: 60.7993
+  type: 'test'
+  ...
+# Subtest: review validation refuses unsupported scope, wrong provenance, future dates and unresolved approval
+ok 73 - review validation refuses unsupported scope, wrong provenance, future dates and unresolved approval
+  ---
+  duration_ms: 10.0521
+  type: 'test'
+  ...
+# Subtest: committed content review appends evidence and audit without changing source versions, rights, scope or facts
+ok 74 - committed content review appends evidence and audit without changing source versions, rights, scope or facts
+  ---
+  duration_ms: 13.2928
+  type: 'test'
+  ...
+# Subtest: identical retry returns the same review while altered evidence with a stale revision conflicts
+ok 75 - identical retry returns the same review while altered evidence with a stale revision conflicts
+  ---
+  duration_ms: 17.5462
+  type: 'test'
+  ...
+# Subtest: concurrent passage reviews commit exactly one revision and audit
+ok 76 - concurrent passage reviews commit exactly one revision and audit
+  ---
+  duration_ms: 9.4575
+  type: 'test'
+  ...
+# Subtest: failure to record audit rolls review and passage status back together
+ok 77 - failure to record audit rolls review and passage status back together
+  ---
+  duration_ms: 9.3604
+  type: 'test'
+  ...
+# Subtest: text or metadata changed after reading invalidates the fingerprint
+ok 78 - text or metadata changed after reading invalidates the fingerprint
+  ---
+  duration_ms: 19.3858
+  type: 'test'
+  ...
+# Subtest: a concurrent text or geographic mapping edit invalidates the atomic write guard
+ok 79 - a concurrent text or geographic mapping edit invalidates the atomic write guard
+  ---
+  duration_ms: 18.6585
+  type: 'test'
+  ...
+# Subtest: later catalog changes display the old review as stale and return the passage to the queue
+ok 80 - later catalog changes display the old review as stale and return the passage to the queue
+  ---
+  duration_ms: 34.7477
+  type: 'test'
+  ...
+# Subtest: superseded body versions cannot be newly reviewed or counted as current
+ok 81 - superseded body versions cannot be newly reviewed or counted as current
+  ---
+  duration_ms: 17.255
+  type: 'test'
+  ...
+# Subtest: an unresolved comparison is recorded separately and cannot inflate completed counts
+ok 82 - an unresolved comparison is recorded separately and cannot inflate completed counts
+  ---
+  duration_ms: 11.9884
+  type: 'test'
+  ...
+# Subtest: coverage stops counting an older review when source metadata changes without replacing the captured passage
+ok 83 - coverage stops counting an older review when source metadata changes without replacing the captured passage
+  ---
+  duration_ms: 31.201
+  type: 'test'
+  ...
+# Subtest: district review persists the exact scope and audit while retaining mappings, versions and retry identity
+ok 84 - district review persists the exact scope and audit while retaining mappings, versions and retry identity
+  ---
+  duration_ms: 35.2566
+  type: 'test'
+  ...
+# Subtest: district evidence cannot relabel an unmapped, legal-dong, exact-name or mixed-scope passage
+ok 85 - district evidence cannot relabel an unmapped, legal-dong, exact-name or mixed-scope passage
+  ---
+  duration_ms: 60.3472
+  type: 'test'
+  ...
+# Subtest: a district-only passage cannot be approved as neighborhood scope and concurrent remapping invalidates the guard
+ok 86 - a district-only passage cannot be approved as neighborhood scope and concurrent remapping invalidates the guard
+  ---
+  duration_ms: 18.2255
+  type: 'test'
+  ...
+# (node:17492) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:17492) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# Subtest: official snapshot maps exactly all registered names and preserves state/date provenance
+ok 87 - official snapshot maps exactly all registered names and preserves state/date provenance
+  ---
+  duration_ms: 8.1968
+  type: 'test'
+  ...
+# Subtest: lifecycle resolution requires exact ID, district and full legal name; ambiguous rows are rejected
+ok 88 - lifecycle resolution requires exact ID, district and full legal name; ambiguous rows are rejected
+  ---
+  duration_ms: 1.3967
+  type: 'test'
+  ...
+# Subtest: malformed states, dates, rows and fingerprints never become verified lifecycle evidence
+ok 89 - malformed states, dates, rows and fingerprints never become verified lifecycle evidence
+  ---
+  duration_ms: 2.0026
+  type: 'test'
+  ...
+# Subtest: lifecycle API refuses non-legal IDs, invalid CAS input and missing address observation without mutation
+ok 90 - lifecycle API refuses non-legal IDs, invalid CAS input and missing address observation without mutation
+  ---
+  duration_ms: 27.3949
+  type: 'test'
+  ...
+# Subtest: official state review appends evidence/audit and preserves address history, region identity and source data
+ok 91 - official state review appends evidence/audit and preserves address history, region identity and source data
+  ---
+  duration_ms: 90.9932
+  type: 'test'
+  ...
+# Subtest: repeated lifecycle writes return the original ID/revision without duplicate audit and stale guards conflict
+ok 92 - repeated lifecycle writes return the original ID/revision without duplicate audit and stale guards conflict
+  ---
+  duration_ms: 28.7818
+  type: 'test'
+  ...
+# Subtest: conflicting official snapshot code never overwrites the observed code
+ok 93 - conflicting official snapshot code never overwrites the observed code
+  ---
+  duration_ms: 55.7635
+  type: 'test'
+  ...
+# Subtest: concurrent lifecycle reviewers commit exactly one revision and audit
+ok 94 - concurrent lifecycle reviewers commit exactly one revision and audit
+  ---
+  duration_ms: 26.2237
+  type: 'test'
+  ...
+# Subtest: failed lifecycle audit rolls the whole new review back without touching address history
+ok 95 - failed lifecycle audit rolls the whole new review back without touching address history
+  ---
+  duration_ms: 29.0987
+  type: 'test'
+  ...
+# Subtest: concurrent region edits invalidate lifecycle guards without writing a false verification
+ok 96 - concurrent region edits invalidate lifecycle guards without writing a false verification
+  ---
+  duration_ms: 58.8924
+  type: 'test'
+  ...
+# Subtest: later address observations do not erase separately recorded lifecycle verification metrics
+ok 97 - later address observations do not erase separately recorded lifecycle verification metrics
+  ---
+  duration_ms: 33.6815
+  type: 'test'
+  ...
+# Subtest: official-only code review requires a committed zero-exact-match address observation
+ok 98 - official-only code review requires a committed zero-exact-match address observation
+  ---
+  duration_ms: 44.2246
+  type: 'test'
+  ...
+# Subtest: official-only review records exact snapshot provenance without claiming an address match
+ok 99 - official-only review records exact snapshot provenance without claiming an address match
+  ---
+  duration_ms: 23.4457
+  type: 'test'
+  ...
+# Subtest: official-only review cannot replace an observed or pre-existing code
+ok 100 - official-only review cannot replace an observed or pre-existing code
+  ---
+  duration_ms: 27.1087
+  type: 'test'
+  ...
+# Subtest: ambiguous matching address codes cannot use the zero-match official-only path
+ok 101 - ambiguous matching address codes cannot use the zero-match official-only path
+  ---
+  duration_ms: 25.5887
+  type: 'test'
+  ...
+# Subtest: official-only review rejects duplicate codes without changing either legal region
+ok 102 - official-only review rejects duplicate codes without changing either legal region
+  ---
+  duration_ms: 22.0332
+  type: 'test'
+  ...
+# Subtest: official-only retry is idempotent while stale revision or code guards fail
+ok 103 - official-only retry is idempotent while stale revision or code guards fail
+  ---
+  duration_ms: 24.2049
+  type: 'test'
+  ...
+# Subtest: concurrent official-only reviews append exactly one code revision and audit
+ok 104 - concurrent official-only reviews append exactly one code revision and audit
+  ---
+  duration_ms: 46.026
+  type: 'test'
+  ...
+# Subtest: official-only code assignment and review roll back together on an audit error
+ok 105 - official-only code assignment and review roll back together on an audit error
+  ---
+  duration_ms: 33.413
+  type: 'test'
+  ...
+# Subtest: a concurrent duplicate assignment invalidates the official-only transaction
+ok 106 - a concurrent duplicate assignment invalidates the official-only transaction
+  ---
+  duration_ms: 24.38
+  type: 'test'
+  ...
+# (node:32672) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:32672) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# Subtest: rejects invalid versions, unregistered names and non-legal regions before fetching
+ok 107 - rejects invalid versions, unregistered names and non-legal regions before fetching
+  ---
+  duration_ms: 31.2376
+  type: 'test'
+  ...
+# Subtest: records exact official address fields with version/audit and preserves original region identity and source
+ok 108 - records exact official address fields with version/audit and preserves original region identity and source
+  ---
+  duration_ms: 123.8815
+  type: 'test'
+  ...
+# Subtest: same-name administrative or substring results cannot establish a legal-dong code
+ok 109 - same-name administrative or substring results cannot establish a legal-dong code
+  ---
+  duration_ms: 29.7962
+  type: 'test'
+  ...
+# Subtest: ambiguous official codes remain unconfirmed
+ok 110 - ambiguous official codes remain unconfirmed
+  ---
+  duration_ms: 34.4124
+  type: 'test'
+  ...
+# Subtest: conflicting existing code remains unchanged and receives a separate conflict record
+ok 111 - conflicting existing code remains unchanged and receives a separate conflict record
+  ---
+  duration_ms: 23.9258
+  type: 'test'
+  ...
+# Subtest: one observed code cannot silently link two different legal-dong IDs
+ok 112 - one observed code cannot silently link two different legal-dong IDs
+  ---
+  duration_ms: 29.6017
+  type: 'test'
+  ...
+# Subtest: repeating a committed request returns its revision without duplicate writes or upstream calls
+ok 113 - repeating a committed request returns its revision without duplicate writes or upstream calls
+  ---
+  duration_ms: 28.2
+  type: 'test'
+  ...
+# Subtest: concurrent reviewers commit exactly one revision and one audit
+ok 114 - concurrent reviewers commit exactly one revision and one audit
+  ---
+  duration_ms: 28.7341
+  type: 'test'
+  ...
+# Subtest: upstream failures do not masquerade as a completed geographic review
+ok 115 - upstream failures do not masquerade as a completed geographic review
+  ---
+  duration_ms: 22.2482
+  type: 'test'
+  ...
+# Subtest: a failed region update rolls back the revision and audit together
+ok 116 - a failed region update rolls back the revision and audit together
+  ---
+  duration_ms: 49.2158
+  type: 'test'
+  ...
+# (node:17496) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: private task access accepts dispatch-protected service calls and verifies any supplied visitor identity
+ok 117 - private task access accepts dispatch-protected service calls and verifies any supplied visitor identity
+  ---
+  duration_ms: 46.151
+  type: 'test'
+  ...
+# Subtest: private task access rejects foreign origins and other hosts
+ok 118 - private task access rejects foreign origins and other hosts
+  ---
+  duration_ms: 0.7147
+  type: 'test'
+  ...
+# (node:12372) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:12372) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# Subtest: unknown rights cannot authorize original storage or reuse
+ok 119 - unknown rights cannot authorize original storage or reuse
+  ---
+  duration_ms: 4.7352
+  type: 'test'
+  ...
+# Subtest: rights require evidence and no-change licenses cannot enable derivative reuse
+ok 120 - rights require evidence and no-change licenses cannot enable derivative reuse
+  ---
+  duration_ms: 0.4848
+  type: 'test'
+  ...
+# Subtest: unsafe URLs and fabricated region identifiers are rejected
+ok 121 - unsafe URLs and fabricated region identifiers are rejected
+  ---
+  duration_ms: 8.6308
+  type: 'test'
+  ...
+# Subtest: source registration creates durable metadata, version and audit atomically
+ok 122 - source registration creates durable metadata, version and audit atomically
+  ---
+  duration_ms: 31.5425
+  type: 'test'
+  ...
+# Subtest: canonical URL duplicate detection ignores tracking and parameter order
+ok 123 - canonical URL duplicate detection ignores tracking and parameter order
+  ---
+  duration_ms: 5.1422
+  type: 'test'
+  ...
+# Subtest: updates preserve old versions and reject stale writes
+ok 124 - updates preserve old versions and reject stale writes
+  ---
+  duration_ms: 10.4277
+  type: 'test'
+  ...
+# Subtest: source search binds SQL parameters and treats wildcard input literally
+ok 125 - source search binds SQL parameters and treats wildcard input literally
+  ---
+  duration_ms: 6.1581
+  type: 'test'
+  ...
+# Subtest: original passages need storage rights and created passages remain pending
+ok 126 - original passages need storage rights and created passages remain pending
+  ---
+  duration_ms: 6.3078
+  type: 'test'
+  ...
+# Subtest: admin access requires verified owner identity or server secret
+ok 127 - admin access requires verified owner identity or server secret
+  ---
+  duration_ms: 45.0019
+  type: 'test'
+  ...
+# Subtest: region hierarchy has one city, 25 districts, 467 names and explicit unverified historical areas
+ok 128 - region hierarchy has one city, 25 districts, 467 names and explicit unverified historical areas
+  ---
+  duration_ms: 2.6188
+  type: 'test'
+  ...
+# Subtest: foundation import is repeatable, preserves original date labels and keeps original files unapproved
+ok 129 - foundation import is repeatable, preserves original date labels and keeps original files unapproved
+  ---
+  duration_ms: 119.4356
+  type: 'test'
+  ...
+# Subtest: region search finds tagged material through children without attaching a building history
+ok 130 - region search finds tagged material through children without attaching a building history
+  ---
+  duration_ms: 85.7451
+  type: 'test'
+  ...
+# Subtest: interrupted foundation import resumes without duplicate sources or facts
+ok 131 - interrupted foundation import resumes without duplicate sources or facts
+  ---
+  duration_ms: 131.2913
+  type: 'test'
+  ...
+# Subtest: uploads enforce rights and retain the stored file hash
+ok 132 - uploads enforce rights and retain the stored file hash
+  ---
+  duration_ms: 37.7691
+  type: 'test'
+  ...
+# (node:28716) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: submitted video groups, exclusions and original report fingerprints remain traceable
+not ok 133 - submitted video groups, exclusions and original report fingerprints remain traceable
+  ---
+  duration_ms: 4.4742
+  type: 'test'
+  location: 'C:\\양진이\\seoul-place-docent-team\\tests\\consolidated-research.test.mjs:11:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + '1dbb761b1498ec4ee431f64c521487ebe905cf6034d665a69c8aa5ea4478e531'
+    - 'a60eff15482dcc00f5b6f370a8a7fbcf935f0a87060734a29265a55da9f6b110'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'a60eff15482dcc00f5b6f370a8a7fbcf935f0a87060734a29265a55da9f6b110'
+  actual: '1dbb761b1498ec4ee431f64c521487ebe905cf6034d665a69c8aa5ea4478e531'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/%EC%96%91%EC%A7%84%EC%9D%B4/seoul-place-docent-team/tests/consolidated-research.test.mjs:18:119)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: malformed links use only explicit supplied IDs and reversed time ranges are disabled
+ok 134 - malformed links use only explicit supplied IDs and reversed time ranges are disabled
+  ---
+  duration_ms: 0.9631
+  type: 'test'
+  ...
+# Subtest: place filtering needs the same district and dong and never promotes district-only records
+ok 135 - place filtering needs the same district and dong and never promotes district-only records
+  ---
+  duration_ms: 0.8228
+  type: 'test'
+  ...
+# Subtest: three imported drafts resolve to their own neighborhood with all evidence references
+ok 136 - three imported drafts resolve to their own neighborhood with all evidence references
+  ---
+  duration_ms: 3.4954
+  type: 'test'
+  ...
+# Subtest: video API paginates candidates separately and exports exclusions only on download
+ok 137 - video API paginates candidates separately and exports exclusions only on download
+  ---
+  duration_ms: 47.7146
+  type: 'test'
+  ...
+# (node:36804) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: coordinates require both legal parcel and road address identity
+ok 138 - coordinates require both legal parcel and road address identity
+  ---
+  duration_ms: 13.2814
+  type: 'test'
+  ...
+# Subtest: another road address on same parcel does not match
+ok 139 - another road address on same parcel does not match
+  ---
+  duration_ms: 0.3647
+  type: 'test'
+  ...
+# Subtest: another parcel with the same road address does not match
+ok 140 - another parcel with the same road address does not match
+  ---
+  duration_ms: 0.1686
+  type: 'test'
+  ...
+# Subtest: multiple matching results stay unconfirmed
+ok 141 - multiple matching results stay unconfirmed
+  ---
+  duration_ms: 0.9886
+  type: 'test'
+  ...
+# Subtest: non-Seoul response cannot match
+ok 142 - non-Seoul response cannot match
+  ---
+  duration_ms: 0.201
+  type: 'test'
+  ...
+# Subtest: missing and implausible coordinates are rejected
+ok 143 - missing and implausible coordinates are rejected
+  ---
+  duration_ms: 0.3454
+  type: 'test'
+  ...
+# Subtest: missing administrative dong is not replaced by legal dong
+ok 144 - missing administrative dong is not replaced by legal dong
+  ---
+  duration_ms: 0.2154
+  type: 'test'
+  ...
+# Subtest: mountain parcel flag is checked
+ok 145 - mountain parcel flag is checked
+  ---
+  duration_ms: 0.1757
+  type: 'test'
+  ...
+# Subtest: query uses normalized road address, secret only in authorization header
+ok 146 - query uses normalized road address, secret only in authorization header
+  ---
+  duration_ms: 39.9714
+  type: 'test'
+  ...
+# Subtest: Kakao access errors and quota are distinct from no matching results
+ok 147 - Kakao access errors and quota are distinct from no matching results
+  ---
+  duration_ms: 3.1916
+  type: 'test'
+  ...
+# (node:5224) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: signed candidate roundtrip preserves normalized Seoul identity
+ok 148 - signed candidate roundtrip preserves normalized Seoul identity
+  ---
+  duration_ms: 19.1715
+  type: 'test'
+  ...
+# Subtest: forged address token is rejected
+ok 149 - forged address token is rejected
+  ---
+  duration_ms: 4.0888
+  type: 'test'
+  ...
+# Subtest: validly signed non-Seoul address is rejected server-side
+ok 150 - validly signed non-Seoul address is rejected server-side
+  ---
+  duration_ms: 4.6379
+  type: 'test'
+  ...
+# Subtest: expired signed token is rejected
+ok 151 - expired signed token is rejected
+  ---
+  duration_ms: 1.9679
+  type: 'test'
+  ...
+# Subtest: Seoul text with contradictory official region code is rejected
+ok 152 - Seoul text with contradictory official region code is rejected
+  ---
+  duration_ms: 0.5314
+  type: 'test'
+  ...
+# Subtest: parcel identifiers retain mountain flag and zero-padding
+ok 153 - parcel identifiers retain mountain flag and zero-padding
+  ---
+  duration_ms: 2.2721
+  type: 'test'
+  ...
+# Subtest: building parcel mismatch is filtered instead of being attached to an address
+ok 154 - building parcel mismatch is filtered instead of being attached to an address
+  ---
+  duration_ms: 0.6218
+  type: 'test'
+  ...
+# Subtest: provider error is not presented as no records
+ok 155 - provider error is not presented as no records
+  ---
+  duration_ms: 0.2237
+  type: 'test'
+  ...
+# Subtest: official candidate search filters non-Seoul and signs Seoul candidates
+ok 156 - official candidate search filters non-Seoul and signs Seoul candidates
+  ---
+  duration_ms: 37.2405
+  type: 'test'
+  ...
+# Subtest: only explicit dong mapping matches; historical areas stay candidates
+ok 157 - only explicit dong mapping matches; historical areas stay candidates
+  ---
+  duration_ms: 0.6796
+  type: 'test'
+  ...
+# Subtest: all registered statements remain neighborhood-level with traceable sources
+ok 158 - all registered statements remain neighborhood-level with traceable sources
+  ---
+  duration_ms: 0.3316
+  type: 'test'
+  ...
+# Subtest: same parcel with a different road address cannot become the current building
+ok 159 - same parcel with a different road address cannot become the current building
+  ---
+  duration_ms: 0.4993
+  type: 'test'
+  ...
+# (node:6704) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 서울역사아카이브 search and item pages
+ok 160 - 서울역사아카이브 search and item pages
+  ---
+  duration_ms: 11.1104
+  type: 'test'
+  ...
+# Subtest: 서울역사아카이브 items without a 공공누리 mark are not used
+ok 161 - 서울역사아카이브 items without a 공공누리 mark are not used
+  ---
+  duration_ms: 4.7829
+  type: 'test'
+  ...
+# Subtest: 성북마을아카이브 only uses 공공누리/CCL records
+ok 162 - 성북마을아카이브 only uses 공공누리/CCL records
+  ---
+  duration_ms: 4.9434
+  type: 'test'
+  ...
+# Subtest: extensionless 성북 images and .tmb thumbnails are displayable
+ok 163 - extensionless 성북 images and .tmb thumbnails are displayable
+  ---
+  duration_ms: 1.3818
+  type: 'test'
+  ...
+# Subtest: dong matching rules
+ok 164 - dong matching rules
+  ---
+  duration_ms: 102.0518
+  type: 'test'
+  ...
+# (node:36440) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: narration is accepted when it only uses numbers found in the source
+ok 165 - narration is accepted when it only uses numbers found in the source
+  ---
+  duration_ms: 1.7891
+  type: 'test'
+  ...
+# Subtest: narration with an invented year or number is rejected
+ok 166 - narration with an invented year or number is rejected
+  ---
+  duration_ms: 0.9127
+  type: 'test'
+  ...
+# Subtest: narration with missing parts or the wrong shape is rejected
+ok 167 - narration with missing parts or the wrong shape is rejected
+  ---
+  duration_ms: 0.3146
+  type: 'test'
+  ...
+# Subtest: fresh narration counts once toward the limit and repeats are served from storage
+ok 168 - fresh narration counts once toward the limit and repeats are served from storage
+  ---
+  duration_ms: 61.6058
+  type: 'test'
+  ...
+# Subtest: narration needs an AI key when nothing is stored
+ok 169 - narration needs an AI key when nothing is stored
+  ---
+  duration_ms: 1.6033
+  type: 'test'
+  ...
+# 성수동1가: 69 photo rows → 69 groups, 73 scenes
+# 북아현동: 105 photo rows → 87 groups, 87 scenes
+# 가회동: 61 photo rows → 61 groups, 64 scenes
+# 한강로1가: 77 photo rows → 24 groups, 24 scenes
+# 수유동: 69 photo rows → 69 groups, 70 scenes
+# (node:35232) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: historical date takes precedence over capture/publication date and keeps uncertainty
+ok 170 - historical date takes precedence over capture/publication date and keeps uncertainty
+  ---
+  duration_ms: 4.6869
+  type: 'test'
+  ...
+# Subtest: cuts of one museum record and reused previews group; collection pages do not collapse unrelated records
+ok 171 - cuts of one museum record and reused previews group; collection pages do not collapse unrelated records
+  ---
+  duration_ms: 1.8375
+  type: 'test'
+  ...
+# Subtest: reading text removes evidence markers without removing uncertainty and uses at most three complete sentences
+ok 172 - reading text removes evidence markers without removing uncertainty and uses at most three complete sentences
+  ---
+  duration_ms: 0.6484
+  type: 'test'
+  ...
+# Subtest: five neighborhoods retain chronological scope; missing records stay empty
+ok 173 - five neighborhoods retain chronological scope; missing records stay empty
+  ---
+  duration_ms: 102.1234
+  type: 'test'
+  ...
+# Subtest: story never includes candidate/conflicting records and district fallback stays district scoped
+ok 174 - story never includes candidate/conflicting records and district fallback stays district scoped
+  ---
+  duration_ms: 0.857
+  type: 'test'
+  ...
+# Subtest: local GPS parser supports both TIFF byte orders and safely rejects no-GPS/malformed files
+ok 175 - local GPS parser supports both TIFF byte orders and safely rejects no-GPS/malformed files
+  ---
+  duration_ms: 1.7054
+  type: 'test'
+  ...
+# Subtest: translation validation keeps IDs and years and rejects inserted historical dates
+ok 176 - translation validation keeps IDs and years and rejects inserted historical dates
+  ---
+  duration_ms: 1.291
+  type: 'test'
+  ...
+# Subtest: manual photos need display permission, https links, a license and an institution
+ok 177 - manual photos need display permission, https links, a license and an institution
+  ---
+  duration_ms: 0.5349
+  type: 'test'
+  ...
+# Subtest: a manually registered photo becomes a dong-level photo scene for a dong without photo data
+ok 178 - a manually registered photo becomes a dong-level photo scene for a dong without photo data
+  ---
+  duration_ms: 1.5881
+  type: 'test'
+  ...
+# Subtest: one scene per year, no repeated photo or text, focus records first
+ok 179 - one scene per year, no repeated photo or text, focus records first
+  ---
+  duration_ms: 16.6597
+  type: 'test'
+  ...
+# (node:35536) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: all eight accumulated tables have matching download counts and hashes
+not ok 180 - all eight accumulated tables have matching download counts and hashes
+  ---
+  duration_ms: 5.2207
+  type: 'test'
+  location: 'C:\\양진이\\seoul-place-docent-team\\tests\\document-research.test.mjs:9:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    199667 !== 199173
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 199173
+  actual: 199667
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/%EC%96%91%EC%A7%84%EC%9D%B4/seoul-place-docent-team/tests/document-research.test.mjs:14:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: all target, source and claim references resolve without modifying source review statuses
+ok 181 - all target, source and claim references resolve without modifying source review statuses
+  ---
+  duration_ms: 17.8854
+  type: 'test'
+  ...
+# Subtest: six inconsistent place links remain inspectable but cannot populate an automatic region match
+ok 182 - six inconsistent place links remain inspectable but cannot populate an automatic region match
+  ---
+  duration_ms: 1.8095
+  type: 'test'
+  ...
+# Subtest: combined filters and multi-source evidence lead to the correct original records
+ok 183 - combined filters and multi-source evidence lead to the correct original records
+  ---
+  duration_ms: 5.2747
+  type: 'test'
+  ...
+# Subtest: address context requires the exact district and legal dong and labels district fallback
+ok 184 - address context requires the exact district and legal dong and labels district fallback
+  ---
+  duration_ms: 2.4668
+  type: 'test'
+  ...
+# Subtest: API paginates, validates table/target, and exports all rows matching the current filters
+ok 185 - API paginates, validates table/target, and exports all rows matching the current filters
+  ---
+  duration_ms: 181.4838
+  type: 'test'
+  ...
+# (node:31588) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: uploaded report preserves its actual 215 rows separately from the unverified cumulative claim
+ok 186 - uploaded report preserves its actual 215 rows separately from the unverified cumulative claim
+  ---
+  duration_ms: 5.8928
+  type: 'test'
+  ...
+# Subtest: clipped URLs and claims cannot become verified videos or complete statements
+ok 187 - clipped URLs and claims cannot become verified videos or complete statements
+  ---
+  duration_ms: 0.5472
+  type: 'test'
+  ...
+# Subtest: the source ID discrepancy remains visible and searchable under either original ID
+ok 188 - the source ID discrepancy remains visible and searchable under either original ID
+  ---
+  duration_ms: 3.3975
+  type: 'test'
+  ...
+# Subtest: research filters combine without silently mixing document event year and publication date
+ok 189 - research filters combine without silently mixing document event year and publication date
+  ---
+  duration_ms: 4.5756
+  type: 'test'
+  ...
+# Subtest: the published original PDF matches the provenance fingerprint byte for byte
+ok 190 - the published original PDF matches the provenance fingerprint byte for byte
+  ---
+  duration_ms: 4.1875
+  type: 'test'
+  ...
+# Subtest: the download includes original provenance and keeps an attachment distinct from viewing
+ok 191 - the download includes original provenance and keeps an attachment distinct from viewing
+  ---
+  duration_ms: 41.7032
+  type: 'test'
+  ...
+# (node:28536) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: one final master supplies records while incremental files and exclusions remain audit evidence
+not ok 192 - one final master supplies records while incremental files and exclusions remain audit evidence
+  ---
+  duration_ms: 2.1941
+  type: 'test'
+  location: 'C:\\양진이\\seoul-place-docent-team\\tests\\integrated-research.test.mjs:14:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    6881 !== 5394
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 5394
+  actual: 6881
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/%EC%96%91%EC%A7%84%EC%9D%B4/seoul-place-docent-team/tests/integrated-research.test.mjs:15:46)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: all eleven unmodified exports are downloadable and final state agrees with the accepted master
+not ok 193 - all eleven unmodified exports are downloadable and final state agrees with the accepted master
+  ---
+  duration_ms: 16.3018
+  type: 'test'
+  location: 'C:\\양진이\\seoul-place-docent-team\\tests\\integrated-research.test.mjs:24:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    429173 !== 420418
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 420418
+  actual: 429173
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/%EC%96%91%EC%A7%84%EC%9D%B4/seoul-place-docent-team/tests/integrated-research.test.mjs:26:115)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: every region association resolves without promoting address relations or visual inspection
+ok 194 - every region association resolves without promoting address relations or visual inspection
+  ---
+  duration_ms: 11.7144
+  type: 'test'
+  ...
+# Subtest: shared originals are grouped across surveys and obsolete IDs resolve to current records
+ok 195 - shared originals are grouped across surveys and obsolete IDs resolve to current records
+  ---
+  duration_ms: 61.6455
+  type: 'test'
+  ...
+# Subtest: address and legal-dong filters require a matching district and use secondary region links
+ok 196 - address and legal-dong filters require a matching district and use secondary region links
+  ---
+  duration_ms: 23.838
+  type: 'test'
+  ...
+# Subtest: support API validates tables, paginates, and keeps held and excluded records distinct from accepted photos
+ok 197 - support API validates tables, paginates, and keeps held and excluded records distinct from accepted photos
+  ---
+  duration_ms: 190.8647
+  type: 'test'
+  ...
+# (node:20464) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: genuine zero national results is a valid result, not an error
+ok 198 - genuine zero national results is a valid result, not an error
+  ---
+  duration_ms: 16.1168
+  type: 'test'
+  ...
+# Subtest: national XML exposes production year and metadata candidates without upgrading spatial scope
+ok 199 - national XML exposes production year and metadata candidates without upgrading spatial scope
+  ---
+  duration_ms: 4.2861
+  type: 'test'
+  ...
+# Subtest: authentication XML errors cannot be presented as zero records
+ok 200 - authentication XML errors cannot be presented as zero records
+  ---
+  duration_ms: 0.8658
+  type: 'test'
+  ...
+# Subtest: XML entity declarations are rejected
+ok 201 - XML entity declarations are rejected
+  ---
+  duration_ms: 0.2442
+  type: 'test'
+  ...
+# Subtest: untrusted result URLs are not emitted as links
+ok 202 - untrusted result URLs are not emitted as links
+  ---
+  duration_ms: 0.2149
+  type: 'test'
+  ...
+# Subtest: photo collection fields retain original ID and remain collection metadata
+ok 203 - photo collection fields retain original ID and remain collection metadata
+  ---
+  duration_ms: 0.3253
+  type: 'test'
+  ...
+# Subtest: photo provider errors cannot be presented as an empty collection
+ok 204 - photo provider errors cannot be presented as an empty collection
+  ---
+  duration_ms: 0.2757
+  type: 'test'
+  ...
+# Subtest: gateway paging uses the published pageNo parameter
+ok 205 - gateway paging uses the published pageNo parameter
+  ---
+  duration_ms: 51.1087
+  type: 'test'
+  ...
+# Subtest: Seonsan-gun Seongsu-dong homonyms are excluded while Seoul and other relevant records remain
+ok 206 - Seonsan-gun Seongsu-dong homonyms are excluded while Seoul and other relevant records remain
+  ---
+  duration_ms: 3.5677
+  type: 'test'
+  ...
+# Subtest: national API and exported candidates omit unrelated homonyms without corrupting provider pagination
+ok 207 - national API and exported candidates omit unrelated homonyms without corrupting provider pagination
+  ---
+  duration_ms: 3.5455
+  type: 'test'
+  ...
+# Subtest: malformed paging is rejected before an external call
+ok 208 - malformed paging is rejected before an external call
+  ---
+  duration_ms: 0.4784
+  type: 'test'
+  ...
+# Subtest: query is bounded and search operators cannot override the intended keyword
+ok 209 - query is bounded and search operators cannot override the intended keyword
+  ---
+  duration_ms: 0.2226
+  type: 'test'
+  ...
+# Subtest: permit XML identifiers larger than JS safe integers remain exact strings
+ok 210 - permit XML identifiers larger than JS safe integers remain exact strings
+  ---
+  duration_ms: 0.7972
+  type: 'test'
+  ...
+# Subtest: permit records of other parcels and mountain flags are rejected
+ok 211 - permit records of other parcels and mountain flags are rejected
+  ---
+  duration_ms: 0.2186
+  type: 'test'
+  ...
+# (node:15352) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: map click preserves its exact point, parcel identity and separate administrative dong
+ok 212 - map click preserves its exact point, parcel identity and separate administrative dong
+  ---
+  duration_ms: 4.4014
+  type: 'test'
+  ...
+# Subtest: no building address still resolves the legal dong without inventing a road address or parcel
+ok 213 - no building address still resolves the legal dong without inventing a road address or parcel
+  ---
+  duration_ms: 0.2897
+  type: 'test'
+  ...
+# Subtest: invalid points and actual non-Seoul region codes are rejected before address selection
+ok 214 - invalid points and actual non-Seoul region codes are rejected before address selection
+  ---
+  duration_ms: 0.8432
+  type: 'test'
+  ...
+# Subtest: reverse lookup verifies the official address candidate and uses secret headers only
+ok 215 - reverse lookup verifies the official address candidate and uses secret headers only
+  ---
+  duration_ms: 106.588
+  type: 'test'
+  ...
+# Subtest: address-search failures preserve the selected point and neighborhood lookup
+ok 216 - address-search failures preserve the selected point and neighborhood lookup
+  ---
+  duration_ms: 2.3863
+  type: 'test'
+  ...
+# Subtest: provider authentication, quota and malformed responses remain distinct errors
+ok 217 - provider authentication, quota and malformed responses remain distinct errors
+  ---
+  duration_ms: 2.9066
+  type: 'test'
+  ...
+# Subtest: MCP exposes evidence preparation, GPS fallback and mechanical validation
+ok 218 - MCP exposes evidence preparation, GPS fallback and mechanical validation
+  ---
+  duration_ms: 2.6221
+  type: 'test'
+  ...
+# Subtest: grouped history pagination uses the actual scene count
+ok 219 - grouped history pagination uses the actual scene count
+  ---
+  duration_ms: 0.3525
+  type: 'test'
+  ...
+# (node:35300) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:35300) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# Subtest: SQLite persisted receipts, safe errors, aggregate counts, P95 and no private payload
+ok 220 - SQLite persisted receipts, safe errors, aggregate counts, P95 and no private payload
+  ---
+  duration_ms: 5.6257
+  type: 'test'
+  ...
+# Subtest: receipt distinguishes absent or failed storage from persisted evidence
+ok 221 - receipt distinguishes absent or failed storage from persisted evidence
+  ---
+  duration_ms: 0.4465
+  type: 'test'
+  ...
+# Subtest: HTTP guards: Origin, host, version, Accept and non-identity rate backstop
+ok 222 - HTTP guards: Origin, host, version, Accept and non-identity rate backstop
+  ---
+  duration_ms: 24.0533
+  type: 'test'
+  ...
+# Subtest: actual HTTP initialization, tools, errors, limits and notification acknowledgement
+ok 223 - actual HTTP initialization, tools, errors, limits and notification acknowledgement
+  ---
+  duration_ms: 14.4679
+  type: 'test'
+  ...
+# Subtest: actual MCP evidence calls cannot reach any LLM or network; input failures safe
+ok 224 - actual MCP evidence calls cannot reach any LLM or network; input failures safe
+  ---
+  duration_ms: 91.2179
+  type: 'test'
+  ...
+# Subtest: admin rejects forged identity, wrong token and cross-origin; authorized missing DB explicit
+ok 225 - admin rejects forged identity, wrong token and cross-origin; authorized missing DB explicit
+  ---
+  duration_ms: 1.1578
+  type: 'test'
+  ...
+# Subtest: question includes visible address and tool workflow; service links never carry private queries
+ok 226 - question includes visible address and tool workflow; service links never carry private queries
+  ---
+  duration_ms: 0.349
+  type: 'test'
+  ...
+# Subtest: authorized admin API reads actual SQL aggregates and looks up a receipt through mocked D1 transport
+ok 227 - authorized admin API reads actual SQL aggregates and looks up a receipt through mocked D1 transport
+  ---
+  duration_ms: 4.7092
+  type: 'test'
+  ...
+# (node:33660) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: discovery advertises the Sites protocol and tools capability
+ok 228 - discovery advertises the Sites protocol and tools capability
+  ---
+  duration_ms: 2.743
+  type: 'test'
+  ...
+# Subtest: tools are discoverable and calls return MCP content blocks
+ok 229 - tools are discoverable and calls return MCP content blocks
+  ---
+  duration_ms: 0.604
+  type: 'test'
+  ...
+# Subtest: invalid envelopes and unknown methods return JSON-RPC errors
+ok 230 - invalid envelopes and unknown methods return JSON-RPC errors
+  ---
+  duration_ms: 1.0044
+  type: 'test'
+  ...
+# Subtest: notifications never execute tools or return a response
+ok 231 - notifications never execute tools or return a response
+  ---
+  duration_ms: 0.5302
+  type: 'test'
+  ...
+# Subtest: unknown tools and non-object arguments are rejected before execution
+ok 232 - unknown tools and non-object arguments are rejected before execution
+  ---
+  duration_ms: 0.4414
+  type: 'test'
+  ...
+# Subtest: unexpected tool failures are safe MCP errors without internal exception text
+ok 233 - unexpected tool failures are safe MCP errors without internal exception text
+  ---
+  duration_ms: 0.6009
+  type: 'test'
+  ...
+# Subtest: initialize negotiates supported legacy versions and supplies client AI instructions
+ok 234 - initialize negotiates supported legacy versions and supplies client AI instructions
+  ---
+  duration_ms: 3.1541
+  type: 'test'
+  ...
+# (node:28908) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: fifty-six research batches preserve original downloadable bytes and district versus dong scope
+not ok 235 - fifty-six research batches preserve original downloadable bytes and district versus dong scope
+  ---
+  duration_ms: 2.688
+  type: 'test'
+  location: 'C:\\양진이\\seoul-place-docent-team\\tests\\photo-research.test.mjs:10:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    5319 !== 3832
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 3832
+  actual: 5319
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/%EC%96%91%EC%A7%84%EC%9D%B4/seoul-place-docent-team/tests/photo-research.test.mjs:11:9)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: accessibility, review and reproduction permissions are independent original fields
+not ok 236 - accessibility, review and reproduction permissions are independent original fields
+  ---
+  duration_ms: 0.4486
+  type: 'test'
+  location: 'C:\\양진이\\seoul-place-docent-team\\tests\\photo-research.test.mjs:23:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    1177 !== 177
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 177
+  actual: 1177
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/%EC%96%91%EC%A7%84%EC%9D%B4/seoul-place-docent-team/tests/photo-research.test.mjs:24:9)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: annotated search URLs are separated from source notes without inventing detail pages
+not ok 237 - annotated search URLs are separated from source notes without inventing detail pages
+  ---
+  duration_ms: 0.7629
+  type: 'test'
+  location: 'C:\\양진이\\seoul-place-docent-team\\tests\\photo-research.test.mjs:34:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    2077 !== 987
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 987
+  actual: 2077
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/%EC%96%91%EC%A7%84%EC%9D%B4/seoul-place-docent-team/tests/photo-research.test.mjs:41:9)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: shared source pages and repeated preview URLs keep distinct research row identities
+ok 238 - shared source pages and repeated preview URLs keep distinct research row identities
+  ---
+  duration_ms: 2.2401
+  type: 'test'
+  ...
+# Subtest: combined neighborhood and candidate filters match their supplied scope rather than a homonym
+not ok 239 - combined neighborhood and candidate filters match their supplied scope rather than a homonym
+  ---
+  duration_ms: 110.0061
+  type: 'test'
+  location: 'C:\\양진이\\seoul-place-docent-team\\tests\\photo-research.test.mjs:53:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    1358 !== 1027
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1027
+  actual: 1358
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/%EC%96%91%EC%A7%84%EC%9D%B4/seoul-place-docent-team/tests/photo-research.test.mjs:58:70)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: photo API paginates, validates batch IDs, and exports complete filtered original data
+not ok 240 - photo API paginates, validates batch IDs, and exports complete filtered original data
+  ---
+  duration_ms: 138.3763
+  type: 'test'
+  location: 'C:\\양진이\\seoul-place-docent-team\\tests\\photo-research.test.mjs:63:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    6881 !== 5394
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 5394
+  actual: 6881
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/%EC%96%91%EC%A7%84%EC%9D%B4/seoul-place-docent-team/tests/photo-research.test.mjs:65:49)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: district cumulative files retain missing sequence notices and stay separate from address matches
+not ok 241 - district cumulative files retain missing sequence notices and stay separate from address matches
+  ---
+  duration_ms: 215.6648
+  type: 'test'
+  location: 'C:\\양진이\\seoul-place-docent-team\\tests\\photo-research.test.mjs:74:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    5298 !== 3811
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 3811
+  actual: 5298
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/%EC%96%91%EC%A7%84%EC%9D%B4/seoul-place-docent-team/tests/photo-research.test.mjs:86:9)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: building correction rows preserve original IDs and facts while type and media filters export independently
+not ok 242 - building correction rows preserve original IDs and facts while type and media filters export independently
+  ---
+  duration_ms: 22.4915
+  type: 'test'
+  location: 'C:\\양진이\\seoul-place-docent-team\\tests\\photo-research.test.mjs:89:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    2268 !== 2243
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2243
+  actual: 2268
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/%EC%96%91%EC%A7%84%EC%9D%B4/seoul-place-docent-team/tests/photo-research.test.mjs:94:75)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Seongdong collection preserves all 107 raw rows and separates bridge construction dates from unverified photograph dates
+ok 243 - Seongdong collection preserves all 107 raw rows and separates bridge construction dates from unverified photograph dates
+  ---
+  duration_ms: 15.025
+  type: 'test'
+  ...
+# Subtest: Nowon shares one unmodified CSV across five dong batches and preserves common-file row numbers
+not ok 244 - Nowon shares one unmodified CSV across five dong batches and preserves common-file row numbers
+  ---
+  duration_ms: 2.1825
+  type: 'test'
+  location: 'C:\\양진이\\seoul-place-docent-team\\tests\\photo-research.test.mjs:112:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    54 !== 52
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 52
+  actual: 54
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/%EC%96%91%EC%A7%84%EC%9D%B4/seoul-place-docent-team/tests/photo-research.test.mjs:119:9)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: neighborhoods resolve only in their supplied district and preserve candidate relations
+ok 245 - neighborhoods resolve only in their supplied district and preserve candidate relations
+  ---
+  duration_ms: 27.3862
+  type: 'test'
+  ...
+# Subtest: Mapo research targets preserve the neighboring district and qualified original place labels
+ok 246 - Mapo research targets preserve the neighboring district and qualified original place labels
+  ---
+  duration_ms: 61.877
+  type: 'test'
+  ...
+# (node:36444) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: question words select matching records within a bounded chronological packet
+ok 247 - question words select matching records within a bounded chronological packet
+  ---
+  duration_ms: 3.97
+  type: 'test'
+  ...
+# Subtest: legacy generation returns evidence without any model request or old answer cache
+ok 248 - legacy generation returns evidence without any model request or old answer cache
+  ---
+  duration_ms: 3.6046
+  type: 'test'
+  ...
+# Subtest: no evidence returns honest no_records, never a fabricated story
+ok 249 - no evidence returns honest no_records, never a fabricated story
+  ---
+  duration_ms: 0.2684
+  type: 'test'
+  ...
+# Subtest: unknown citations including mixed known/unknown, unsupported numbers and long scenes are rejected
+ok 250 - unknown citations including mixed known/unknown, unsupported numbers and long scenes are rejected
+  ---
+  duration_ms: 2.0528
+  type: 'test'
+  ...
+# Subtest: KPI separates retrieval from validation and never invents client completion or token usage
+ok 251 - KPI separates retrieval from validation and never invents client completion or token usage
+  ---
+  duration_ms: 1.1164
+  type: 'test'
+  ...
+# Subtest: metrics failure does not block evidence retrieval
+ok 252 - metrics failure does not block evidence retrieval
+  ---
+  duration_ms: 1.9339
+  type: 'test'
+  ...
+# Subtest: MCP module has no model-provider capability or answer cache reuse
+ok 253 - MCP module has no model-provider capability or answer cache reuse
+  ---
+  duration_ms: 0.97
+  type: 'test'
+  ...
+# (node:32124) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: closed records keep current parcel matching separate from building identity, and reject expired authorization
+ok 254 - closed records keep current parcel matching separate from building identity, and reject expired authorization
+  ---
+  duration_ms: 7.2018
+  type: 'test'
+  ...
+# Subtest: parcel polygons require the exact PNU, finite Seoul coordinates, and preserve holes
+ok 255 - parcel polygons require the exact PNU, finite Seoul coordinates, and preserve holes
+  ---
+  duration_ms: 1.3272
+  type: 'test'
+  ...
+# Subtest: publication normalization strips markup and only opens official museum ebook URLs
+ok 256 - publication normalization strips markup and only opens official museum ebook URLs
+  ---
+  duration_ms: 1.0971
+  type: 'test'
+  ...
+# Subtest: a public image URL alone cannot enable a thumbnail, and unknown permissions stay unchanged
+not ok 257 - a public image URL alone cannot enable a thumbnail, and unknown permissions stay unchanged
+  ---
+  duration_ms: 3.2153
+  type: 'test'
+  location: 'C:\\양진이\\seoul-place-docent-team\\tests\\place-context.test.mjs:28:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'https://archives-files.seoul.go.kr/v2/photoarchive/attachfile/mig/6112942/12/2015112101/thumbnail/2000_2015112101241118555.JPG'
+    - null
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ~
+  actual: 'https://archives-files.seoul.go.kr/v2/photoarchive/attachfile/mig/6112942/12/2015112101/thumbnail/2000_2015112101241118555.JPG'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///C:/%EC%96%91%EC%A7%84%EC%9D%B4/seoul-place-docent-team/tests/place-context.test.mjs:31:44)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: visual galleries paginate in place, reset invalid pages, and label district fallback without cross-district matching
+ok 258 - visual galleries paginate in place, reset invalid pages, and label district fallback without cross-district matching
+  ---
+  duration_ms: 28.3194
+  type: 'test'
+  ...
+# (node:36572) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: helpers
+ok 259 - helpers
+  ---
+  duration_ms: 1.7345
+  type: 'test'
+  ...
+# Subtest: accepts open licences with provenance
+ok 260 - accepts open licences with provenance
+  ---
+  duration_ms: 1.3045
+  type: 'test'
+  ...
+# Subtest: rejects unclear licences, non-free and non-image
+ok 261 - rejects unclear licences, non-free and non-image
+  ---
+  duration_ms: 0.6837
+  type: 'test'
+  ...
+# Subtest: rank: old dated first, then nearest, deduped
+ok 262 - rank: old dated first, then nearest, deduped
+  ---
+  duration_ms: 1.8238
+  type: 'test'
+  ...
+# Subtest: scene is displayable by existing photo pipeline
+ok 263 - scene is displayable by existing photo pipeline
+  ---
+  duration_ms: 1.0626
+  type: 'test'
+  ...
+# Subtest: findPlacePhotos works with fixtures, retries 429, and does not cache total failure
+ok 264 - findPlacePhotos works with fixtures, retries 429, and does not cache total failure
+  ---
+  duration_ms: 2482.9635
+  type: 'test'
+  ...
+# (node:15348) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Node reads runtime settings and leaves absent storage unconfigured
+ok 265 - Node reads runtime settings and leaves absent storage unconfigured
+  ---
+  duration_ms: 45.974
+  type: 'test'
+  ...
+# Subtest: Node creates existing D1 and R2 bindings only when fully configured
+ok 266 - Node creates existing D1 and R2 bindings only when fully configured
+  ---
+  duration_ms: 0.6419
+  type: 'test'
+  ...
+# Subtest: D1 preserves prepared SQL and bound values, authenticating only in headers
+ok 267 - D1 preserves prepared SQL and bound values, authenticating only in headers
+  ---
+  duration_ms: 7.5131
+  type: 'test'
+  ...
+# Subtest: D1 batches use one documented batch request with ordered parameters
+ok 268 - D1 batches use one documented batch request with ordered parameters
+  ---
+  duration_ms: 1.7166
+  type: 'test'
+  ...
+# Subtest: D1 rejects remote failures without leaking response details or credentials
+ok 269 - D1 rejects remote failures without leaking response details or credentials
+  ---
+  duration_ms: 2.9124
+  type: 'test'
+  ...
+# Subtest: R2 signs private object requests and preserves upload metadata and bytes
+ok 270 - R2 signs private object requests and preserves upload metadata and bytes
+  ---
+  duration_ms: 39.1848
+  type: 'test'
+  ...
+# Subtest: R2 missing objects stay null and successful JSON/body reads work
+ok 271 - R2 missing objects stay null and successful JSON/body reads work
+  ---
+  duration_ms: 14.0379
+  type: 'test'
+  ...
+# (node:1856) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: every collected 서울기록원 entry is displayable with source and terms
+ok 272 - every collected 서울기록원 entry is displayable with source and terms
+  ---
+  duration_ms: 65.7284
+  type: 'test'
+  ...
+# Subtest: ids from different registries do not collide
+ok 273 - ids from different registries do not collide
+  ---
+  duration_ms: 0.2796
+  type: 'test'
+  ...
+# (node:11168) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: parses the photo list
+ok 274 - parses the photo list
+  ---
+  duration_ms: 4.7104
+  type: 'test'
+  ...
+# Subtest: parses item metadata and rights
+ok 275 - parses item metadata and rights
+  ---
+  duration_ms: 2.1853
+  type: 'test'
+  ...
+# Subtest: rejects restricted items
+ok 276 - rejects restricted items
+  ---
+  duration_ms: 0.5517
+  type: 'test'
+  ...
+# Subtest: queries from dong and road
+ok 277 - queries from dong and road
+  ---
+  duration_ms: 1.4502
+  type: 'test'
+  ...
+# Subtest: end to end with fixtures becomes a displayable scene
+ok 278 - end to end with fixtures becomes a displayable scene
+  ---
+  duration_ms: 37.2212
+  type: 'test'
+  ...
+1..278
+# tests 278
+# suites 0
+# pass 265
+# fail 13
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4314.186

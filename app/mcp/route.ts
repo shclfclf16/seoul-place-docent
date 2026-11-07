@@ -1,4 +1,6 @@
 import {env} from '@/lib/runtime-env';
+import {auditedTool} from '@/lib/mcp-audit';
+import {checkMcpHttp,createMcpLimiter} from '@/lib/mcp-http';
 import {z} from 'zod';
 import {archiveStats, database} from '@/lib/archive-db';
 import {getDocentStory, getFullDocentStory} from '@/lib/docent-data';
@@ -9,8 +11,10 @@ import {generatePlaceAnswer, placeAnswerStats, pickScenes, validateAnswer, scene
 import {handleMcpMessage, rpcError, textResult, type McpTool, type McpToolResult} from '@/lib/mcp-protocol';
 
 export const dynamic = 'force-dynamic';
+function auditDatabase(){return env.DB||(env as Cloudflare.Env & {MCP_AUDIT_DB?:D1Database}).MCP_AUDIT_DB;}
 const MAX_BODY_BYTES = 32768;
 const headers = {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'};
+const allowRequest=createMcpLimiter();
 
 const tools: McpTool[] = [
   {
@@ -229,6 +233,9 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
 
 /** Bound streamed bodies as well as requests with Content-Length. */
 export async function POST(request: Request) {
+  const denied=checkMcpHttp(request,env as Cloudflare.Env & {MCP_ALLOWED_ORIGINS?:string;MCP_ALLOWED_HOSTS?:string});
+  if(denied)return Response.json(rpcError(null,-32600,'Request headers rejected'),{status:denied,headers});
+  if(!allowRequest())return Response.json(rpcError(null,-32000,'Too many requests'),{status:429,headers:{...headers,'Retry-After':'60'}});
   if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get('content-type') ?? '')) {
     return Response.json(rpcError(null, -32600, 'Content-Type must be application/json'), {status: 415, headers});
   }
@@ -265,7 +272,14 @@ export async function POST(request: Request) {
   } catch {
     return Response.json(rpcError(null, -32700, 'Parse error'), {status: 400, headers});
   }
-  const response = await handleMcpMessage(message, tools, (name, args) => execute(name, args));
+  const response = await handleMcpMessage(message, tools, (name, args) => auditedTool(auditDatabase(),name,()=>execute(name, args)));
   if (response === undefined) return new Response(null, {status: 202, headers});
   return Response.json(response, {headers});
 }
+
+// Stateless JSON responses; no SSE stream or session id is allocated.
+export function GET(request:Request) {
+  const denied=checkMcpHttp(request,env as Cloudflare.Env & {MCP_ALLOWED_ORIGINS?:string;MCP_ALLOWED_HOSTS?:string});
+  return new Response(null,{status:denied??405,headers:{...headers,Allow:'POST'}});
+}
+export const DELETE=GET;
