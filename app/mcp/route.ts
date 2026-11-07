@@ -11,6 +11,7 @@ import {generatePlaceAnswer, placeAnswerStats, pickScenes, validateAnswer, scene
 import {handleMcpMessage, rpcError, textResult, type McpTool, type McpToolResult} from '@/lib/mcp-protocol';
 
 export const dynamic = 'force-dynamic';
+function auditDatabase(){return env.DB||(env as Cloudflare.Env & {MCP_AUDIT_DB?:D1Database}).MCP_AUDIT_DB;}
 const MAX_BODY_BYTES = 32768;
 const headers = {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'};
 const allowRequest=createMcpLimiter();
@@ -271,7 +272,7 @@ export async function POST(request: Request) {
   } catch {
     return Response.json(rpcError(null, -32700, 'Parse error'), {status: 400, headers});
   }
-  const response = await handleMcpMessage(message, tools, (name, args) => auditedTool(env.DB,name,()=>execute(name, args)));
+  const response = await handleMcpMessage(message, tools, (name, args) => auditedTool(auditDatabase(),name,()=>execute(name, args)));
   if (response === undefined) return new Response(null, {status: 202, headers});
   return Response.json(response, {headers});
 }
