@@ -1,0 +1,66 @@
+▲ Next.js 16.3.4 (webpack)
+✓ Running next.config.ts took 428ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 33.9s
+  Running TypeScript ...
+  Finished TypeScript in 19.5s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/41) ...
+  Generating static pages using 11 workers (10/41) 
+  Generating static pages using 11 workers (20/41) 
+  Generating static pages using 11 workers (30/41) 
+✓ Generating static pages using 11 workers (41/41) in 1553ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/address
+├ ƒ /api/ai-summary
+├ ƒ /api/archive/assets/[id]
+├ ƒ /api/archive/capture
+├ ƒ /api/archive/coverage
+├ ƒ /api/archive/document-research
+├ ƒ /api/archive/export
+├ ƒ /api/archive/integrated-research
+├ ƒ /api/archive/passage-corrections
+├ ƒ /api/archive/passage-reviews
+├ ƒ /api/archive/photo-research
+├ ƒ /api/archive/regions
+├ ƒ /api/archive/reports/city-history
+├ ƒ /api/archive/seed
+├ ƒ /api/archive/session
+├ ƒ /api/archive/sources
+├ ƒ /api/archive/sources/[id]
+├ ƒ /api/archive/sources/[id]/assets
+├ ƒ /api/archive/sources/[id]/passages
+├ ƒ /api/archive/stats
+├ ƒ /api/archive/task
+├ ƒ /api/archive/video-research
+├ ƒ /api/catalog
+├ ƒ /api/docent
+├ ƒ /api/docent/narration
+├ ƒ /api/docent/translation
+├ ƒ /api/map-address
+├ ƒ /api/map-config
+├ ƒ /api/permits
+├ ƒ /api/place
+├ ƒ /api/place-context
+├ ƒ /api/place-photos
+├ ƒ /api/publications
+├ ƒ /api/records
+├ ƒ /api/status
+├ ○ /archive
+├ ○ /archive/document-research
+├ ○ /archive/photo-research
+├ ○ /archive/video-research
+├ ○ /en
+├ ○ /ko
+└ ƒ /mcp
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

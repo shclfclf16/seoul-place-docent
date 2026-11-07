@@ -1,6 +1,6 @@
 # 이용자 AI 실행 검증 보고서
 
-검증일: 2026-11-06 (한국 시간). 기준 코드: GitHub main `d216679`, 검증 브랜치 `codex/verify-client-ai`. 운영 배포·main 병합 없음.
+검증일: 2026-11-06, 추가 확인 2026-11-07 (한국 시간). 기준 코드: GitHub main `d216679`, 검증 브랜치 `codex/verify-client-ai`. 운영 배포·main 병합 없음. 변경사항은 [검토용 PR #1](https://github.com/shclfclf16/seoul-place-docent/pull/1)에 업로드했습니다.
 
 ## 최종 결론
 
@@ -122,4 +122,17 @@ node --experimental-transform-types --import ./tests/ts-resolver.mjs scripts/aud
 마지막 명령은 로컬 .dev.vars의 JUSO_API_KEY만 읽어 공식 주소 API를 호출합니다. 모델 API와 다른 외부 통신은 차단합니다. 원본 token은 출력하지 않습니다. 실제 사용자 주소나 사진을 자동 수집하지 않습니다.
 
 검사 결과: 33개 통과, 타입 검사 통과. 로그: [자동 테스트](verification/client-ai-tests.log), [공식 주소 실조회](verification/address-live.log). 도구 목록의 이름이나 serverAiCalls라는 자체 표기가 아니라 실제 네트워크 가로채기 및 자료 ID로 확인했습니다. 호출한 AI 앱과 운영 계정의 청구 내역은 확인하지 않았습니다.
-`npm run build`는 Vinext의 analyze client references 단계에서 장시간 진행되지 않아 중단했습니다. 빌드 통과로 보고하지 않습니다. 브라우저 시각 검증과 운영 배포도 이번 검증에 포함되지 않았습니다.
+Vercel용 `node node_modules/next/dist/bin/next build --webpack`은 종료 코드 0으로 완료했습니다. 컴파일·TypeScript 검사·정적 페이지 41/41 생성에 성공했고 `/mcp` 동적 경로를 확인했습니다. [빌드 로그](verification/vercel-build.log)를 첨부합니다. 이는 Vercel 실제 배포 성공을 뜻하지 않습니다.
+
+기존 Sites/Cloudflare의 `npm run build`는 Vinext의 analyze client references 단계에서 장시간 진행되지 않아 중단했습니다. 이 배포 경로는 여전히 검증 미완료이며, Vercel 빌드 성공으로 대체하지 않습니다. 전체 홈페이지 시각 회귀 검사와 운영 배포는 수행하지 않았습니다.
+
+## 2026-11-07 원격 인증 진단
+
+- 운영 홈페이지는 브라우저에서 열립니다. 동일 도메인의 `/mcp`는 브라우저에서도 `Unauthorized`를 표시합니다. 홈페이지를 볼 수 있다는 사실은 MCP 인증 완료를 뜻하지 않습니다.
+- 인증 없는 initialize 요청은 HTTP 401이며, `WWW-Authenticate`가 `/.well-known/oauth-protected-resource/mcp`를 안내합니다.
+- 해당 메타데이터는 HTTP 200입니다. `authorization_servers`는 `https://auth.openai.com`, resource는 운영 `/mcp`, 인증 방식은 Bearer입니다. 서버는 `openid resource.invoke email` 범위를 요구합니다. 따라서 임의로 정한 로컬 MCP_ACCESS_TOKEN으로 대체해서는 안 됩니다.
+- 이 응답과 로컬 라우트의 Sites 인증 위임 구조는 Sites 인증 계층이 요청을 거절하는 상황과 부합합니다. 인증 뒤 실제 운영 코드에 도달했는지는 확인하지 못했습니다.
+- 소유자 계정 로그인 확인 후에도 현재 Codex Sites 연결의 소유 사이트 목록은 비어 있고, 저장소 manifest의 기존 프로젝트 조회는 NOT_FOUND입니다. 브라우저 계정과 연결 도구의 계정 또는 워크스페이스가 다를 가능성이 있으나 원인은 확정하지 못했습니다.
+- 다음 단계는 기존 사이트가 보이는 계정·워크스페이스로 Sites 연결을 복구한 후 공식 MCP 연결 정보와 인증 절차를 확인하는 것입니다. 인증 삭제, 공개 전환, 새 프로젝트 생성으로 우회하지 않았습니다.
+
+현재 원격 initialize/tools/list/tools/call, Claude·ChatGPT·Gemini 실제 대화 생성과 이용량, 휴대폰 사진 실증은 모두 미완료입니다. PR 병합 및 운영 배포는 소유자 승인 전까지 하지 않습니다.
