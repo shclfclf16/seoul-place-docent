@@ -5,7 +5,7 @@ export type McpTool = {
   annotations?: Record<string, boolean>;
 };
 export type McpContent = {type: 'text'; text: string};
-export type McpToolResult = {content: McpContent[]; isError?: boolean};
+export type McpToolResult = {content: McpContent[]; isError?: boolean; _meta?: Record<string,unknown>};
 type Execute = (name: string, args: Record<string, unknown>) => Promise<McpToolResult>;
 
 export const MCP_VERSION = '2026-07-28';
