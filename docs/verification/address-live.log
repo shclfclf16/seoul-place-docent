@@ -1,0 +1,8 @@
+{"query":"사직로 161","candidates":2,"nonSeoul":2,"requiresUserChoice":true,"packet":"ready","sourceIds":["seoul-museum-2666","seoul-museum-2667"]}
+{"query":"왕십리로 83","candidates":1,"nonSeoul":0,"requiresUserChoice":false,"packet":"ready","sourceIds":["claim:E000427","seoul-museum-4795"]}
+{"query":"삼양로173길 7","candidates":1,"nonSeoul":0,"requiresUserChoice":false,"packet":"ready","sourceIds":["seoul-museum-1340","seoul-museum-1345"]}
+{"query":"북촌로 53","candidates":2,"nonSeoul":0,"requiresUserChoice":true,"packet":"ready","sourceIds":["bukchon:0","seoul-museum-5437"]}
+{"query":"양화로 160","candidates":1,"nonSeoul":3,"requiresUserChoice":false,"packet":"ready","sourceIds":["seoul-museum-3811","SEOUL-GU-013-DONG-007-B001-P001"]}
+{"query":"성수동","candidates":10,"nonSeoul":0,"requiresUserChoice":true,"packet":"ready","sourceIds":["seoul-museum-4852","seongsu:1"]}
+{"query":"부산광역시 중앙대로 100","candidates":0,"nonSeoul":3,"requiresUserChoice":false}
+{"network":7,"blocked":0,"modelRequests":0,"clientTokens":"not_measured","note":"First candidate used by audit only, not asserted to be user confirmed."}
