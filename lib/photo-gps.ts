@@ -1,6 +1,24 @@
 import exifr from 'exifr';
 
-export type PhotoGpsInspection = {status:'ok';format:'jpeg'|'heic'|'png';exifPresent:true;gpsPresent:true;point:{x:number;y:number}} | {status:'gps_missing'|'exif_corrupt'|'invalid_coordinates'|'format_mismatch'|'unsupported_format';format:string;exifPresent:boolean;gpsPresent:boolean};
+export type PhotoGpsInspection = {status:'ok';format:'jpeg'|'heic'|'png';exifPresent:boolean;gpsPresent:true;source:'exif'|'xmp';point:{x:number;y:number}} | {status:'gps_missing'|'exif_corrupt'|'invalid_coordinates'|'format_mismatch'|'unsupported_format';format:string;exifPresent:boolean;gpsPresent:boolean};
+
+function xmpCoordinate(value:unknown,reference:unknown,axis:'latitude'|'longitude'){
+ const ref=typeof reference==='string'?reference.trim().toUpperCase():'';
+ const validRefs=axis==='latitude'?['N','S']:['E','W'];
+ if(ref&&!validRefs.includes(ref))return null;
+ let degrees:number,minutes=0,seconds=0,direction=ref;
+ if(typeof value==='number')degrees=value;
+ else if(typeof value==='string'){
+  const match=value.trim().match(/^([+-]?\d+(?:\.\d+)?)(?:(?:\s*,\s*|\s+)(\d+(?:\.\d+)?))?(?:(?:\s*,\s*|\s+)(\d+(?:\.\d+)?))?\s*([NSEW])?$/i);
+  if(!match)return null;
+  degrees=Number(match[1]);minutes=match[2]===undefined?0:Number(match[2]);seconds=match[3]===undefined?0:Number(match[3]);
+  if(match[4]){const suffix=match[4].toUpperCase();if(!validRefs.includes(suffix)||direction&&direction!==suffix)return null;direction=suffix;}
+  if((match[2]!==undefined||match[3]!==undefined)&&!direction)return null;
+ }else return null;
+ if(!Number.isFinite(degrees)||!Number.isFinite(minutes)||!Number.isFinite(seconds)||minutes>=60||seconds>=60)return null;
+ const magnitude=Math.abs(degrees)+minutes/60+seconds/3600;
+ return direction?(direction==='S'||direction==='W'?-magnitude:magnitude):degrees;
+}
 
 /** Inspect real file content and read GPS in the browser. Never uploads or stores image bytes. */
 export async function inspectPhotoGps(file:Pick<File,'name'|'type'|'arrayBuffer'>):Promise<PhotoGpsInspection>{
@@ -12,10 +30,29 @@ export async function inspectPhotoGps(file:Pick<File,'name'|'type'|'arrayBuffer'
  if(format==='unknown')return {status:'unsupported_format',format,exifPresent:false,gpsPresent:false};
  if(extensionMismatch||mimeMismatch)return {status:'format_mismatch',format,exifPresent:false,gpsPresent:false};
  if(format==='png')return {status:'gps_missing',format,exifPresent:false,gpsPresent:false};
- try{const tags=await exifr.parse(b,{tiff:true,exif:true,gps:true,xmp:false,icc:false,iptc:false});if(!tags)return {status:'gps_missing',format,exifPresent:false,gpsPresent:false};
-  const gps=await exifr.gps(b);if(!tags.GPSLatitude&&!tags.GPSLongitude)return {status:'gps_missing',format,exifPresent:true,gpsPresent:false};
-  const {latitude,longitude}=gps||{};if(!Number.isFinite(latitude)||!Number.isFinite(longitude)||Math.abs(latitude)>90||Math.abs(longitude)>180)return {status:'invalid_coordinates',format,exifPresent:true,gpsPresent:true};
-  return {status:'ok',format:format as 'jpeg'|'heic',exifPresent:true,gpsPresent:true,point:{x:longitude,y:latitude}};
+ if(format==='jpeg'){
+  const buffer=b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength);
+  const point=readPhotoGps(buffer);
+  if(point){
+   if(point.x===0&&point.y===0)return {status:'invalid_coordinates',format:'jpeg',exifPresent:true,gpsPresent:true};
+   return {status:'ok',format:'jpeg',exifPresent:true,gpsPresent:true,source:'exif',point};
+  }
+ }
+ try{
+  const tags=await exifr.parse(b,{tiff:true,exif:true,gps:true,xmp:false,icc:false,iptc:false});
+  const exifPresent=Boolean(tags&&Object.keys(tags).some(key=>key!=='errors'));
+  const gps=await exifr.gps(b);
+  if(gps||tags?.GPSLatitude||tags?.GPSLongitude){
+   const {latitude,longitude}=gps||{};
+   if(typeof latitude!=='number'||typeof longitude!=='number'||!Number.isFinite(latitude)||!Number.isFinite(longitude)||Math.abs(latitude)>90||Math.abs(longitude)>180||(latitude===0&&longitude===0))return {status:'invalid_coordinates',format,exifPresent:true,gpsPresent:true};
+   return {status:'ok',format:format as 'jpeg'|'heic',exifPresent:true,gpsPresent:true,source:'exif',point:{x:longitude,y:latitude}};
+  }
+  const xmp=await exifr.parse(b,{tiff:false,exif:false,gps:false,xmp:true,icc:false,iptc:false});
+  if(!xmp?.GPSLatitude&&!xmp?.GPSLongitude)return {status:'gps_missing',format,exifPresent,gpsPresent:false};
+  const latitude=xmpCoordinate(xmp.GPSLatitude,xmp.GPSLatitudeRef,'latitude');
+  const longitude=xmpCoordinate(xmp.GPSLongitude,xmp.GPSLongitudeRef,'longitude');
+  if(typeof latitude!=='number'||typeof longitude!=='number'||!Number.isFinite(latitude)||!Number.isFinite(longitude)||Math.abs(latitude)>90||Math.abs(longitude)>180||(latitude===0&&longitude===0))return {status:'invalid_coordinates',format,exifPresent,gpsPresent:true};
+  return {status:'ok',format:format as 'jpeg'|'heic',exifPresent,gpsPresent:true,source:'xmp',point:{x:longitude,y:latitude}};
  }catch{return {status:'exif_corrupt',format,exifPresent:true,gpsPresent:false};}
 }
 
