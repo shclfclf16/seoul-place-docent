@@ -20,7 +20,8 @@ import MuseumPublicationsPanel from './MuseumPublicationsPanel';
 import ClosedBuildingsPanel from './ClosedBuildingsPanel';
 import DocentStory from './DocentStory';
 import VideoResearchPanel from './VideoResearchPanel';
-import {readPhotoGps} from '@/lib/photo-gps';
+import {photoFileIssue,readPhotoGps} from '@/lib/photo-gps';
+import PhotoDocentPacket from './PhotoDocentPacket';
 import '../docent.css';
 import type {PlaceContext, MuseumPublications} from '@/lib/place-context';
 type Result = {selectionMode?:'map';address:Address;history:Region[];building:{status:string;message?:string;data?:{items:Building[];parcelCandidates:Building[];total:number;truncated:boolean;queriedAt:string;sourceUrl:string}};coordinates:{status:string;message?:string;data?:{status:string;message?:string;x?:number;y?:number;administrativeDong?:string;queriedAt?:string}};queriedAt:string};
@@ -39,6 +40,10 @@ export default function Home({language='ko'}:{language?:'ko'|'en'}){
  const [nationalData,setNationalData]=useState<ArchiveSearch|null>(null);const [photoData,setPhotoData]=useState<ArchiveSearch|null>(null);const [permitData,setPermitData]=useState<PermitBundle|null>(null);
  const [q,setQ]=useState('');const [searching,setSearching]=useState(false);const [searchError,setSearchError]=useState('');const [candidates,setCandidates]=useState<Candidate[]>([]);const [searched,setSearched]=useState(false);const [page,setPage]=useState(1);const [total,setTotal]=useState(0);const [nonSeoul,setNonSeoul]=useState(0);
  const [loading,setLoading]=useState(false);const [result,setResult]=useState<Result|null>(null);const [token,setToken]=useState('');const [regionId,setRegionId]=useState('');const [additionalOpen,setAdditionalOpen]=useState(false);const [era,setEra]=useState('all');const [buildingId,setBuildingId]=useState('');const [floorData,setFloorData]=useState<Floor[]>([]);const [floorState,setFloorState]=useState('');const [floorLoading,setFloorLoading]=useState(false);const [modal,setModal]=useState<'guide'|null>(null);const [status,setStatus]=useState<{address:boolean;building:boolean;coordinates:boolean;map:boolean;ai:boolean;national:boolean;photos:boolean;permits:boolean}|null>(null);
+ const photoAttempt=useRef(0);
+ const [locationReview,setLocationReview]=useState<(MapAddressResult & {point:{x:number;y:number}})|null>(null);
+ const [inputMode,setInputMode]=useState<'photo'|'current'|null>(null);
+ const [locating,setLocating]=useState(false);
  const [mapPoint,setMapPoint]=useState<CoordinateResult|null>(null);const [mapLocation,setMapLocation]=useState<MapLocation|null>(null);const [mapPicking,setMapPicking]=useState(false);const [mapMessage,setMapMessage]=useState('');const mapAbort=useRef<AbortController|null>(null);
  const abort=useRef<AbortController|null>(null);const selectAbort=useRef<AbortController|null>(null);const floorAbort=useRef<AbortController|null>(null);const requestVersion=useRef(0);const resultRef=useRef<HTMLDivElement>(null);
  const selectedRegions = result?.history??[];
@@ -54,35 +59,75 @@ export default function Home({language='ko'}:{language?:'ko'|'en'}){
   return()=>controller.abort();
  },[result,token,contextAttempt]);
  useEffect(()=>{if(!modal)return;const previous=document.activeElement as HTMLElement|null;const handler=(e:KeyboardEvent)=>{if(e.key==='Escape')setModal(null);if(e.key==='Tab'){const nodes=Array.from(document.querySelectorAll<HTMLElement>('.modal button,.modal a,.modal input')).filter(x=>!x.hasAttribute('disabled'));const first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}};document.body.style.overflow='hidden';document.addEventListener('keydown',handler);document.querySelector<HTMLButtonElement>('.modal-close')?.focus();return()=>{document.body.style.overflow='';document.removeEventListener('keydown',handler);previous?.focus();};},[modal]);
- useEffect(()=>()=>{mapAbort.current?.abort();abort.current?.abort();selectAbort.current?.abort();floorAbort.current?.abort();},[]);
+ useEffect(()=>()=>{photoAttempt.current++;mapAbort.current?.abort();abort.current?.abort();selectAbort.current?.abort();floorAbort.current?.abort();},[]);
  async function search(nextPage=1){
+  photoAttempt.current++;setPhotoLoading(false);setLocating(false);setLocationReview(null);setInputMode(null);
   mapAbort.current?.abort();setMapPicking(false);setMapLocation(null);setMapMessage('');setMapPoint(null);selectAbort.current?.abort();floorAbort.current?.abort();setLoading(false);requestVersion.current++;
   abort.current?.abort();const c=new AbortController();abort.current=c;setSearching(true);setSearchError('');setSearched(false);setCandidates([]);
   try{const r=await fetch(`/api/address?q=${encodeURIComponent(q.trim())}&page=${nextPage}`,{signal:c.signal});const d=await readJson<{candidates:Candidate[];page:number;total:number;nonSeoulCount:number}>(r);if(!r.ok)throw new Error(d.error?.message??'주소를 불러오지 못했습니다.');if(c.signal.aborted)return;setCandidates(d.candidates);setPage(d.page);setTotal(d.total);setNonSeoul(d.nonSeoulCount);setSearched(true);}catch(e){if(!c.signal.aborted)setSearchError(e instanceof Error?e.message:'주소 조회에 실패했습니다.');}finally{if(!c.signal.aborted)setSearching(false);}
  }
- async function choose(a:Candidate,fromMap=false){if(!fromMap){mapAbort.current?.abort();setMapPicking(false);setMapPoint(null);setMapLocation(null);setMapMessage('');}setPhotoResearchData(null);setDocumentData(null);setAiData(null);setNationalData(null);setPhotoData(null);setPermitData(null);
+ async function choose(a:Candidate,fromMap=false){
+  photoAttempt.current++;setPhotoLoading(false);setLocating(false);setLocationReview(null);
+  if(!fromMap){setInputMode(null);mapAbort.current?.abort();setMapPicking(false);setMapPoint(null);setMapLocation(null);setMapMessage('');}setPhotoResearchData(null);setDocumentData(null);setAiData(null);setNationalData(null);setPhotoData(null);setPermitData(null);
   abort.current?.abort();setSearching(false);selectAbort.current?.abort();floorAbort.current?.abort();const c=new AbortController();selectAbort.current=c;requestVersion.current++;setLoading(true);setSearchError('');setResult(null);setBuildingId('');setFloorData([]);setFloorState('');setFloorLoading(false);setToken(a.token);setEra('all');setAdditionalOpen(false);
   try{const r=await fetch('/api/place',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:a.token}),signal:c.signal});const d=await readJson<Result>(r);if(!r.ok)throw new Error(d.error?.message??'장소를 불러오지 못했습니다.');if(c.signal.aborted)return;setResult(d);setCandidates([]);setSearched(false);setQ(d.address.roadAddr);setRegionId(d.history[0]?.id??'');if(d.building.data?.items.length===1)setBuildingId(d.building.data.items[0].id);requestAnimationFrame(()=>resultRef.current?.scrollIntoView({behavior:'smooth',block:'start'}));}catch(e){if(!c.signal.aborted)setSearchError(e instanceof Error?e.message:'장소 조회에 실패했습니다.');}finally{if(!c.signal.aborted)setLoading(false);}
  }
- async function pickMap(point:{x:number;y:number}){
+ function showNeighborhood(body:MapAddressResult,point:{x:number;y:number}){
+  const address=body.location.address;const history=matchRegions(address.sggNm,address.emdNm);setRegionId(history[0]?.id??'');
+  setResult({selectionMode:'map',address,history,building:{status:'not_selected',message:'촬영·선택 위치의 동네 기록입니다. 피사체 건물과의 일치는 미확인입니다.'},coordinates:{status:'ok',data:{status:'verified',...point,administrativeDong:body.location.administrativeDong}},queriedAt:new Date().toISOString()});
+  requestAnimationFrame(()=>resultRef.current?.scrollIntoView({behavior:'smooth',block:'start'}));
+ }
+ async function confirmLocation(candidate?:Candidate){
+  if(!locationReview)return;
+  const body=locationReview;setLocationReview(null);
+  if(candidate){await choose(candidate,true);return;}
+  showNeighborhood(body,body.point);
+ }
+ async function pickMap(point:{x:number;y:number},confirm=false){
+  setLocationReview(null);
+  if(!confirm){photoAttempt.current++;setPhotoLoading(false);setLocating(false);setInputMode(null);}
   mapAbort.current?.abort();abort.current?.abort();selectAbort.current?.abort();floorAbort.current?.abort();requestVersion.current++;
   const controller=new AbortController();mapAbort.current=controller;
-  setMapPoint({status:'verified',...point,source:'map-click'});setMapLocation(null);setMapPicking(true);setMapMessage('');setSearchError('');setSearching(false);setSearched(false);setCandidates([]);setLoading(false);setResult(null);setToken('');setBuildingId('');setFloorData([]);setFloorState('');setFloorLoading(false);setAdditionalOpen(false);setEra('all');setPhotoResearchData(null);setDocumentData(null);setPublications(null);setAiData(null);setNationalData(null);setPhotoData(null);setPermitData(null);
+  setMapPoint({status:'verified',...point,source:confirm?'shared-gps':'map-click'});setMapLocation(null);setMapPicking(true);setMapMessage('');setSearchError('');setSearching(false);setSearched(false);setCandidates([]);setLoading(false);setResult(null);setToken('');setBuildingId('');setFloorData([]);setFloorState('');setFloorLoading(false);setAdditionalOpen(false);setEra('all');setPhotoResearchData(null);setDocumentData(null);setPublications(null);setAiData(null);setNationalData(null);setPhotoData(null);setPermitData(null);
   try{
-   const response=await fetch('/api/map-address?'+new URLSearchParams({x:String(point.x),y:String(point.y)}),{signal:controller.signal});
+   const response=await fetch(confirm?'/api/map-address':'/api/map-address?'+new URLSearchParams({x:String(point.x),y:String(point.y)}),confirm?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(point),signal:controller.signal}:{signal:controller.signal});
    const body=await readJson<MapAddressResult>(response);if(!response.ok)throw new Error(body.error?.message||'선택한 지점의 주소를 불러오지 못했습니다.');if(controller.signal.aborted)return;
    setMapLocation(body.location);setMapMessage(body.message);setQ(body.location.address.roadAddr||body.location.address.jibunAddr);
+   if(confirm){setLocationReview({...body,point});return;}
    if(body.candidates.length===1){await choose(body.candidates[0],true);return;}
-   const address=body.location.address;const history=matchRegions(address.sggNm,address.emdNm);setRegionId(history[0]?.id??'');
-   setResult({selectionMode:'map',address,history,building:{status:'not_selected',message:'지도에서 선택한 지점입니다. 건물 주소를 선택하면 현재 건물 정보를 조회할 수 있습니다.'},coordinates:{status:'ok',data:{status:'verified',...point,administrativeDong:body.location.administrativeDong}},queriedAt:new Date().toISOString()});
+   showNeighborhood(body,point);
    if(body.candidates.length>1){setCandidates(body.candidates);setTotal(body.candidates.length);setPage(1);setNonSeoul(0);setSearched(true);setMapMessage('같은 지번에 여러 주소가 있습니다. 지도 아래에서 건물 주소를 선택할 수 있습니다.');}
    else requestAnimationFrame(()=>resultRef.current?.scrollIntoView({behavior:'smooth',block:'start'}));
   }catch(error){if(!controller.signal.aborted){const message=error instanceof Error?error.message:'선택한 지점의 주소를 불러오지 못했습니다.';setSearchError(message);setMapMessage(message);}}
   finally{if(!controller.signal.aborted)setMapPicking(false);}
  }
  async function openPhoto(file:File){
-  setPhotoMessage('');if(file.size>20*1024*1024){setPhotoMessage(en?'Choose a JPEG smaller than 20 MB.':'20MB 이하의 JPEG 사진을 선택해 주세요.');return;}
-  setPhotoLoading(true);try{const point=readPhotoGps(await file.arrayBuffer());if(!point){setPhotoMessage(en?'No JPEG GPS metadata was found. Please enter the address instead.':'사진에서 GPS 위치정보를 찾지 못했어요. JPEG 원본을 선택하거나 주소를 입력해 주세요.');document.getElementById('address')?.focus();return;}if(point.x<126.7||point.x>127.3||point.y<37.4||point.y>37.8){setPhotoMessage(en?'This photo’s GPS is outside the supported Seoul area.':'사진의 GPS가 서울 지원 범위를 벗어나 있어요. 서울 주소를 입력해 주세요.');return;}setPhotoMessage(en?'GPS found. Finding the address.':'GPS 위치를 찾았어요. 그곳의 주소를 확인할게요.');await pickMap(point);}catch{setPhotoMessage(en?'Unable to read this photo. Please enter an address.':'사진을 읽지 못했어요. 주소를 입력해 주세요.');}finally{setPhotoLoading(false);if(photoInput.current)photoInput.current.value='';}
+  const version=++photoAttempt.current;
+  mapAbort.current?.abort();setMapPicking(false);setLocating(false);setPhotoLoading(false);setLocationReview(null);setPhotoMessage('');setInputMode('photo');
+  if(photoInput.current)photoInput.current.value='';
+  const issue=photoFileIssue(file);
+  if(issue){setPhotoMessage(issue==='size'?(en?'Choose a nonempty JPEG up to 20 MB.':'20MB 이하의 JPEG 원본을 선택해 주세요.'):(en?'HEIC/HEIF and other formats are not supported. Export a JPEG with location or enter an address.':'HEIC/HEIF 등은 아직 지원하지 않아요. 위치정보가 유지된 JPEG 원본을 선택하거나 주소를 입력해 주세요.'));return;}
+  setPhotoLoading(true);
+  try{
+   const point=readPhotoGps(await file.arrayBuffer());
+   if(version!==photoAttempt.current)return;
+   if(!point){setPhotoMessage(en?'GPS was absent or the JPEG metadata could not be read. Enter an address, choose a map point, or share your current location.':'GPS가 없거나 사진 메타데이터를 읽을 수 없어요. 주소 입력, 지도 선택 또는 현재 위치를 이용해 주세요.');document.getElementById('address')?.focus();return;}
+   if(point.x<126.7||point.x>127.3||point.y<37.4||point.y>37.8){setPhotoMessage(en?'This photo is outside the supported Seoul area.':'사진의 GPS가 서울 지원 범위를 벗어나 있어요. 서울 주소를 입력해 주세요.');return;}
+   setPhotoMessage(en?'GPS found. Confirm the shooting location below.':'GPS를 읽었어요. 촬영 위치의 주소를 조회합니다. 사진 속 건물과 같은 위치인지는 확인해 주세요.');
+   await pickMap(point,true);
+  }catch{if(version===photoAttempt.current)setPhotoMessage(en?'Unable to read this photo. Enter an address.':'사진을 읽지 못했어요. 주소를 입력해 주세요.');}
+  finally{if(version===photoAttempt.current)setPhotoLoading(false);}
+ }
+ function useCurrentLocation(){
+  if(!navigator.geolocation){setPhotoMessage(en?'Current location is unavailable. Enter an address.':'현재 위치를 사용할 수 없어요. 주소를 입력해 주세요.');return;}
+  const version=++photoAttempt.current;
+  mapAbort.current?.abort();setMapPicking(false);setPhotoLoading(false);setLocationReview(null);setPhotoMessage('');setInputMode('current');setLocating(true);
+  navigator.geolocation.getCurrentPosition(position=>{
+   if(version!==photoAttempt.current)return;
+   setPhotoMessage((en?'Current location accuracy, meters: ':'현재 위치의 오차 범위(미터) · ')+Math.round(position.coords.accuracy));
+   void pickMap({x:position.coords.longitude,y:position.coords.latitude},true).finally(()=>{if(version===photoAttempt.current)setLocating(false);});
+  },()=>{if(version===photoAttempt.current){setLocating(false);setPhotoMessage(en?'Location permission was declined or the location is unavailable. Enter an address or choose a map point.':'위치 권한이 거절됐거나 현재 위치를 확인할 수 없어요. 주소 입력이나 지도 선택을 이용해 주세요.');}},
+  {enableHighAccuracy:true,timeout:15000,maximumAge:0});
  }
  async function loadFloors(){if(!buildingId||!token)return;floorAbort.current?.abort();const c=new AbortController();floorAbort.current=c;const version=requestVersion.current;setFloorLoading(true);setFloorState('');setFloorData([]);try{const r=await fetch('/api/place',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,buildingId}),signal:c.signal});const d=await readJson<{items:Floor[];truncated:boolean}>(r);if(!r.ok)throw new Error(d.error?.message??'층별 조회 실패');if(requestVersion.current!==version)return;setFloorData(d.items);setFloorState(d.truncated?'조회 범위를 초과해 일부 층별 기록만 제공됩니다.':d.items.length?'선택한 대장 식별번호와 일치하는 층별 기록입니다.':'선택한 대장과 일치하는 층별 기록을 확인하지 못했습니다.');}catch(e){if(!c.signal.aborted)setFloorState(e instanceof Error?e.message:'층별 정보를 불러오지 못했습니다.');}finally{if(!c.signal.aborted&&requestVersion.current===version)setFloorLoading(false);}}
  function rememberAIAddress(){const address=result?.address.roadAddr||result?.address.jibunAddr||'';if(address)sessionStorage.setItem('docent-ai-address',address);else sessionStorage.removeItem('docent-ai-address');}
@@ -94,9 +139,18 @@ export default function Home({language='ko'}:{language?:'ko'|'en'}){
 
  <section className="hero docent-hero"><div className="hero-content"><div className="eyebrow"><span/>SEOUL PLACE DOCENT</div><h1>{en?<>Every place<br/><em>has a past.</em></>:<>당신이 선 곳에도,<br/><em>이야기가 있어요.</em></>}</h1><p className="hero-description">{en?<>One address. A walk through photographs and time.</>:<>주소 하나로 시작하는, 사진 속 서울의 시간 여행.</>}</p></div></section>
  <section id="explore" className="search-section docent-search" aria-label={en?'Find a Seoul place':'서울 장소 찾기'}><form onSubmit={e=>{e.preventDefault();search();}} className="search-form"><MapPin size={22}/><label className="sr-only" htmlFor="address">{en?'Seoul address':'서울 주소'}</label><input id="address" value={q} onChange={e=>setQ(e.target.value)} placeholder={en?'Enter a Seoul street address':'어느 장소의 시간이 궁금한가요? 주소를 입력하세요'} maxLength={100} required autoComplete="street-address"/><button className="search-submit" type="submit" disabled={searching||loading||photoLoading}>{searching?<Loader2 className="spin" size={18}/>:<ArrowRight size={19}/>}<span>{searching?(en?'Searching':'찾는 중'):(en?'Begin':'시간 여행 시작')}</span></button></form>
- <div className="docent-input-options"><input ref={photoInput} className="sr-only" type="file" accept="image/jpeg,.jpg,.jpeg" aria-label={en?'Choose a GPS JPEG photo':'GPS가 포함된 JPEG 사진 선택'} onChange={e=>{const f=e.target.files?.[0];if(f)void openPhoto(f);}}/><button type="button" onClick={()=>photoInput.current?.click()} disabled={photoLoading||loading||searching||mapPicking}>{photoLoading?<Loader2 size={16} className="spin"/>:<Camera size={17}/>} {en?'Start with a photo':'사진 한 장으로 시작'}</button><span>{en?'GPS JPEG · up to 20 MB':'GPS가 있는 JPEG · 20MB 이하'}</span></div>
+ <div className="docent-input-options"><input ref={photoInput} className="sr-only" type="file" accept="image/jpeg,.jpg,.jpeg" aria-label={en?'Choose a GPS JPEG photo':'GPS가 포함된 JPEG 사진 선택'} onChange={e=>{const f=e.target.files?.[0];if(f)void openPhoto(f);}}/><button type="button" onClick={()=>photoInput.current?.click()} disabled={photoLoading||loading||searching||mapPicking}>{photoLoading?<Loader2 size={16} className="spin"/>:<Camera size={17}/>} {en?'Start with a photo':'사진 한 장으로 시작'}</button><span>{en?'GPS JPEG · up to 20 MB':'GPS가 있는 JPEG · 20MB 이하'}</span><button type="button" onClick={useCurrentLocation} disabled={locating||photoLoading||loading||mapPicking}>{locating?(en?'Finding location':'위치 확인 중'):(en?'Use my current location':'내 현재 위치 사용')}</button></div>
  <p className="docent-photo-privacy">{en?'Photo files stay on your device. Only GPS coordinates are sent to look up the address. No GPS? Enter the address.':'사진 파일은 전송·저장하지 않아요. 사진의 GPS 좌표만 주소 조회에 사용하며, 위치정보가 없으면 주소를 입력해 주세요.'}</p>
  {photoMessage&&<p className="notice" role="status">{photoMessage}</p>}
+ {locationReview&&<section className="photo-location-review" aria-label={en?'Confirm location':'촬영 위치 확인'}>
+  <h3>{en?'Confirm this location':'이 위치로 자료를 찾아볼까요?'}</h3>
+  <p>{locationReview.location.address.roadAddr||locationReview.location.address.jibunAddr}</p>
+  <p>{locationReview.location.address.sggNm} · 법정동 {locationReview.location.address.emdNm} · 행정동 {locationReview.location.administrativeDong||'미확인'}</p>
+  <p>{locationReview.message} · 촬영자의 위치이며 사진 속 피사체의 건물·부지와 일치하는지는 미확인입니다.</p>
+  {locationReview.candidates.map(candidate=><button type="button" key={candidate.token} onClick={()=>void confirmLocation(candidate)}>{candidate.roadAddr} {candidate.bdNm} · 이 주소 확인</button>)}
+  <button type="button" onClick={()=>void confirmLocation()}>이 동네 기록 보기</button>
+  <button type="button" onClick={()=>{setLocationReview(null);photoAttempt.current++;setPhotoLoading(false);setLocating(false);document.getElementById('address')?.focus();}}>주소 변경</button>
+ </section>}
  <details className="docent-map"><summary><MapPin size={15}/>{en?'Or choose a point on the map':'또는 지도에서 위치 고르기'}<ChevronDown size={14}/></summary><KakaoMapPanel address={mapLocation?.address.roadAddr||mapLocation?.address.jibunAddr||result?.address.roadAddr||result?.address.jibunAddr} point={mapPoint??result?.coordinates.data} message={mapMessage||result?.coordinates.message} parcel={placeContext?.parcel.status==='ok'?placeContext.parcel.data:undefined} parcelMessage={placeContext?.parcel.status==='unavailable'?placeContext.parcel.message:undefined} onPick={pickMap} picking={mapPicking||loading}/></details>
  {(searchError||loading)&&<div className={searchError?'notice error':'notice'} role={searchError?'alert':'status'}>{loading?<Loader2 className="spin" size={17}/>:<Info size={17}/>}<span>{loading?'주소를 검증하고 현재 장소 정보를 조회하고 있습니다.':searchError}</span></div>}
  {searched&&<div className="candidate-panel" aria-live="polite"><div className="candidate-head"><b>주소 후보 선택</b><span>전체 검색 {total.toLocaleString()}건 · 현재 페이지 서울 후보 {candidates.length}건</span><button className="icon-button" onClick={()=>setSearched(false)} aria-label="후보 목록 닫기"><X size={17}/></button></div>{candidates.length?candidates.map(a=><button key={a.bdMgtSn+a.roadAddr} className="candidate" onClick={()=>choose(a)}><MapPin size={18}/><span><strong>{a.roadAddr}</strong><small>{a.jibunAddr}{a.bdNm?` · ${a.bdNm}`:''}</small></span><ArrowRight size={17}/></button>):<p className="candidate-empty">{nonSeoul?'현재 페이지에는 서울 주소 후보가 없습니다. 서울 도로명과 건물번호를 입력하거나 다음 페이지를 확인해 주세요.':'검색 결과가 없습니다. 도로명과 건물번호를 확인해 주세요.'}</p>}<div className="candidate-foot"><span>다른 시도 후보 {nonSeoul}건 제외 · {page}페이지</span><div><button disabled={page<=1||searching} onClick={()=>search(page-1)}><ChevronLeft size={14}/>이전</button><button disabled={page*10>=total||searching} onClick={()=>search(page+1)}>다음<ChevronRight size={14}/></button></div></div></div>}
@@ -107,8 +161,10 @@ export default function Home({language='ko'}:{language?:'ko'|'en'}){
  {result&&<div className="address-line"><span><b>지번</b>{result.address.jibunAddr}</span><span><b>법정동</b>{result.address.emdNm}</span><span><b>행정동</b>{result.coordinates.data?.administrativeDong||'미확인'}</span></div>}
  <a className="ai-guide-place-link" href="/ai-guide" onClick={rememberAIAddress}>내 AI로 이 장소의 역사 알아보기 →</a>
  <article className="place-flow" aria-label="장소 통합 탐색 결과">
- {!en&&<AISummaryPanel key={'ai:'+(token||result.address.roadAddr)+':'+buildingId} auto token={token||undefined} regionId={token?undefined:selected?.id} buildingId={buildingId||undefined} onGenerated={setAiData}/>}
- <DocentStory key={result.address.admCd+result.address.roadAddr+result.address.jibunAddr} address={result.address} building={building} point={result.coordinates.data?.status==='verified'&&typeof result.coordinates.data.x==='number'&&typeof result.coordinates.data.y==='number'?{x:result.coordinates.data.x,y:result.coordinates.data.y}:undefined} language={language}/>
+ {!en&&<AISummaryPanel key={'ai:'+(token||result.address.roadAddr)+':'+buildingId} auto={!inputMode} token={token||undefined} regionId={token?undefined:selected?.id} buildingId={buildingId||undefined} onGenerated={setAiData}/>}
+ <DocentStory key={result.address.admCd+result.address.roadAddr+result.address.jibunAddr} address={result.address} building={building} point={result.coordinates.data?.status==='verified'&&typeof result.coordinates.data.x==='number'&&typeof result.coordinates.data.y==='number'?{x:result.coordinates.data.x,y:result.coordinates.data.y}:undefined} language={language} autoNarration={!inputMode}/>
+ {token&&<PhotoDocentPacket token={token} address={result.address.roadAddr||result.address.jibunAddr}/>}
+ {inputMode&&!token&&<p className="notice">법정동 범위의 자료를 표시합니다. 주소를 검색해 선택하면 AI에 전달할 근거자료도 복사할 수 있어요.</p>}
  <VideoResearchPanel key={result.address.sggNm+result.address.emdNm} district={result.address.sggNm} dong={result.address.emdNm}/>
  <div className="docent-more-heading"><span className="overline">BEHIND THE STORY</span><h3>{en?'Learn more':'더 알아보기'}</h3><p>{en?'Original records, current building details, and how this story is assembled.':'이야기의 근거와 오늘의 장소 정보를 모았어요.'}</p></div>
  <details className="place-disclosure"><summary><FileText size={17}/><span>{en?'Documents & visual archive':'문헌·사진 원문 더 보기'}<small>{en?'Full research records in Korean':'전체 문헌, 간행물, 사진 기록'}</small></span><ChevronDown size={17}/></summary><div className="place-disclosure-content">

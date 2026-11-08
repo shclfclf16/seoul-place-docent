@@ -92,3 +92,36 @@ body{background:var(--docent-paper)}
 .user-ai-connect>h1{padding:24px 24px 12px;margin:0;font-size:1.65rem;font-weight:700;line-height:1.4}.ai-guide-page{max-width:1008px;margin:32px auto;padding:0 24px 40px}.ai-guide-back{display:inline-block;margin-bottom:12px;color:#245547}.ai-guide-address{padding:16px;border-radius:10px;background:#edf4ef;overflow-wrap:anywhere}.ai-guide-page .user-ai-connect{max-width:none;margin:20px 0}.ai-guide-place-link{display:inline-block;padding:12px 18px;margin:12px 0 20px;border-radius:8px;background:#245547;color:white;font-weight:600}
 @media(max-width:640px){.header-inner{flex-wrap:wrap;gap:12px}.site-header nav{gap:14px}.ai-guide-page{padding:0 16px 24px}.user-ai-connect>h1{padding:20px 16px 12px;font-size:1.4rem}}
 @media(max-width:640px){.site-header .nav-active{display:inline-block}}
+
+.photo-location-review, .photo-docent-packet {
+  margin: 20px 0;
+  padding: 20px;
+  border: 1px solid #cbd6c8;
+  border-radius: 12px;
+  background: #f4f6ef;
+  overflow-wrap: anywhere;
+}
+.photo-location-review h3, .photo-docent-packet h3 {font-size: 20px; margin-bottom: 12px;}
+.photo-location-review p, .photo-docent-packet p {line-height: 1.8; margin: 10px 0;}
+.photo-location-review button, .photo-docent-packet button, .photo-docent-packet > a {
+  display: inline-block;
+  min-height: 44px;
+  padding: 12px 16px;
+  margin: 6px;
+  border: 1px solid #b5c4a5;
+  border-radius: 8px;
+  background: white;
+}
+.photo-docent-packet textarea {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 12px 0;
+  padding: 12px;
+  background: white;
+  border: 1px solid #cbd6c8;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.photo-docent-packet small {display: block; line-height: 1.7;}
+.docent-input-options {flex-wrap: wrap;}
+.docent-input-options button {min-height: 44px;}
