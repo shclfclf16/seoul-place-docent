@@ -23,7 +23,9 @@ export default function UserAIConnect({address=''}:{address?:string}) {
    <label>사용할 AI <select value={service} onChange={e=>{setService(e.target.value as keyof typeof aiServices);setMessage('');}}>{Object.keys(aiServices).map(name=><option key={name}>{name}</option>)}</select></label>
    <h3>{service} · {info.support}</h3><p>{info.conditions}</p>
    <ol>{info.steps.map(step=><li key={step}>{step}</li>)}</ol>
-   {sitesHost&&!url&&<p role="alert">이 홈페이지의 Sites MCP 주소는 호스팅 OAuth 인증을 요구합니다. 인증 없음으…282 tokens truncated…bc18영됩니다.</p>}
+   {sitesHost&&!url&&<p role="alert">공개 MCP 주소를 확인 중입니다. 홈페이지의 /mcp 주소는 OAuth 인증이 필요하므로 인증 없음으로 등록하지 마세요.</p>}
+   {url&&<><label>MCP 서버 URL<input readOnly value={url}/></label><button type="button" onClick={()=>void copy(url)}>MCP 주소 복사</button></>}
+   <label>주소 기반 역사 질문<textarea readOnly value={question} rows={5}/></label>
    <button type="button" onClick={()=>void copy(question)}>역사 질문 복사</button>
    <h4>스마트폰 사진으로 시작하기</h4><p>기본 카메라에서 위치정보를 켜고 촬영한 원본 JPEG·HEIC를 AI 대화에 파일로 첨부한 뒤 아래 질문을 붙여넣으세요. 사진 미리보기와 원본 파일 전달은 다를 수 있습니다. GPS가 없거나 첨부를 읽지 못하면 홈페이지에서 원본 사진을 선택해 주소를 확인할 수 있어요.</p>
    <button type="button" onClick={()=>void copy(photoHistoryQuestion())}>사진 도슨트 질문 복사</button>
