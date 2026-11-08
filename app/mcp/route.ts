@@ -2,6 +2,7 @@ import {env} from '@/lib/runtime-env';
 import {z} from 'zod';
 import {archiveStats, database} from '@/lib/archive-db';
 import {getDocentStory, getFullDocentStory} from '@/lib/docent-data';
+import {placeMedia} from '@/lib/place-media';
 import {mapAddress} from '@/lib/map-address';
 import {photoResearchThumbnail} from '@/lib/photo-research';
 import {searchAddresses, ServiceError, verifyAddress} from '@/lib/providers';
@@ -183,6 +184,7 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
             photoGroups: story.photoGroups,
             unpictured: story.unpictured,
           },
+          media: await placeMedia(story),
           note: '장면은 동네 또는 자치구 범위의 기록입니다. 입력한 건물·부지와의 동일성을 뜻하지 않습니다. 출처별 확인 범위를 함께 읽어 주세요.',
         });
       }
@@ -201,7 +203,7 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
         const story = getFullDocentStory(address.sggNm, address.emdNm);
         const packet=await generatePlaceAnswer({address,story,question:input.question,questionType:input.questionType});
         await logClientDocent(env.DB,{event:'retrieval',ms:Date.now()-startedAt,ok:packet.status==='ready',records:packet.neighborhood.selected,type:input.questionType});
-        return textResult(packet);
+        return textResult({...packet,media:await placeMedia(story)});
       }
       case 'get_answer_stats': {
         const input = z.object({days: z.number().int().min(1).max(365).default(30)}).strict().parse(args);
