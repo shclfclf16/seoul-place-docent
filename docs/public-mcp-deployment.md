@@ -1,5 +1,13 @@
 # 공개 MCP 전용 Vercel 배포
 
+## GitHub 자동 배포 설정
+
+기존 `seoul-place-docent-mcp` 프로젝트를 `xeonica/seoul-place-docent` 저장소의 `main`에 연결합니다. 프로젝트 Root Directory는 `deploy/public-mcp`, Include source files outside Root Directory는 켜짐, Framework는 Other, Build Command는 `node git-build.mjs`, Install Command는 빈 값, Output Directory는 override 없이 둡니다. Node는 22.x입니다. `deploy/public-mcp/vercel.json`이 루트 홈페이지용 Next.js 설정과 MCP 빌드를 구분합니다.
+
+이 빌드는 Vercel이 체크아웃한 정확한 커밋에서 기존 MCP Build Output API 패키지를 만들고 현재 프로젝트의 `.vercel/output`에 복사합니다. 기존 서버 환경변수와 Production 도메인을 유지합니다. Vercel 계정의 GitHub 연결·저장소 권한은 별도로 필요하며, 코드·메타데이터만으로 OAuth 동의를 대신할 수 없습니다. 연결한 뒤 실제 Git push로 생성된 deployment의 gitSource SHA·READY·/health·MCP 조회를 확인해야 자동 연동 완료입니다.
+
+`bootstrap.mjs`로 공개 Git SHA를 내려받는 방식은 해당 커밋을 배포하는 대체 경로이며 push 자동 연동은 아닙니다.
+
 ## 원인과 배포 범위
 
 Sites 홈페이지는 공개지만 Sites가 `/mcp` 앞단에서 OAuth를 요구합니다. 코드의 Origin·Accept 검사를 없애도 Sites가 반환하는 401은 해결되지 않습니다. 별도의 공개 MCP 서버를 배포합니다. 홈페이지·기존 Vercel 웹 설정·역사 데이터·사진·영상·기존 AI API는 그대로 유지합니다.
@@ -63,3 +71,8 @@ HTTP 프로브, 기존 Sites의 인증된 플러그인 호출, 로컬 fixture �
 Vercel에 `MCP_AUDIT_URL=https://seoul-place-history.xeonire.chatgpt.site/api/internal/mcp-audit`와 전용 Secret `MCP_AUDIT_TOKEN`을 설정합니다. 같은 Secret을 Sites에 설정하고 수신 API를 배포합니다. 관리자 키와 구분한 통계 쓰기 전용 키입니다. 임의 SQL·자료 내용·사용자 주소·질문은 전송하지 않습니다. 인증, 엄격한 스키마, 크기 제한, 시각 검사를 통과한 호출 메타데이터만 기존 D1에 저장합니다. 실제 저장 응답을 받은 경우에만 `auditPersisted=true`를 반환합니다.
 
 로컬 D1이 있으면 그 D1을 우선합니다. 전송 실패 시에도 자료 조회는 계속되고 `auditPersisted=false`와 구조화 로그가 남습니다. 자동 재전송·과거 로그 소급 저장은 없습니다. `/health`의 auditConfigured는 설정 존재 여부이고, 실제 저장 성공은 MCP 응답 receipt와 관리자 화면의 requestId를 대조해 확인합니다.
+
+
+### 사진 GPS 주소 변환 연결
+
+공개 MCP에 KAKAO_REST_API_KEY가 없으면 `MCP_MAP_ADDRESS_URL=https://seoul-place-history.xeonire.chatgpt.site/api/map-address`로 기존 사이트의 공개 주소 변환 API를 재사용할 수 있습니다. 이 정확한 HTTPS URL만 허용하고 redirect를 거절합니다. 실제 좌표를 전달하고 서울 범위·반환 좌표를 검사한 뒤 공개 MCP 자체 JUSO 키로 후보를 재조회·서명합니다. 원격 token이나 제공기관 키를 복사하지 않습니다. /health의 photoGpsConfigured는 연결 설정 존재만 뜻하며 실제 호출 성공은 별도로 검사합니다.

@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import {recordMcpCall} from './mcp-audit';
 const headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
-const tools=['search_place','resolve_photo_location','get_place_history','prepare_place_answer','generate_place_answer','validate_place_answer','get_answer_stats','get_archive_stats'] as const;
+const tools=['search_place','extract_photo_location','resolve_photo_location','get_place_history','prepare_place_answer','generate_place_answer','validate_place_answer','get_answer_stats','get_archive_stats'] as const;
 const rowSchema=z.object({requestId:z.string().uuid(),tool:z.enum(tools),at:z.number().int(),ok:z.boolean(),records:z.number().int().min(0).max(10000),ms:z.number().int().min(0).max(300000),errorType:z.string().max(64).regex(/^[a-zA-Z0-9_-]*$/).nullable(),client:z.enum(['unknown','claude_unverified','chatgpt_unverified','gemini_unverified']),validation:z.boolean()}).strict();
 function equal(a:string,b:string){if(!a||a.length!==b.length)return false;let diff=0;for(let i=0;i<a.length;i++)diff|=a.charCodeAt(i)^b.charCodeAt(i);return diff===0;}
 export function auditReceiver(settings:Pick<Cloudflare.Env,'DB'|'MCP_AUDIT_TOKEN'>){return async function receive(request:Request){

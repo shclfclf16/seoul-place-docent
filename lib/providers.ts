@@ -1,4 +1,4 @@
-export type Secrets = { JUSO_API_KEY?: string; BUILDING_API_KEY?: string; KAKAO_REST_API_KEY?: string };
+export type Secrets = { JUSO_API_KEY?: string; BUILDING_API_KEY?: string; KAKAO_REST_API_KEY?: string; MCP_MAP_ADDRESS_URL?:string };
 export type Address = { roadAddr:string; jibunAddr:string; siNm:string; sggNm:string; emdNm:string; admCd:string; bdMgtSn:string; bdNm:string; lnbrMnnm:string; lnbrSlno:string; mtYn:string; zipNo:string };
 export type Candidate = Address & {token:string};
 export class ServiceError extends Error { constructor(public code:string, message:string,public status=502){super(message);} }
