@@ -4,6 +4,7 @@ import {archiveStats, database} from '@/lib/archive-db';
 import {getDocentStory, getFullDocentStory} from '@/lib/docent-data';
 import {getDocentVideoCandidates} from '@/lib/docent-videos';
 import {mapAddress} from '@/lib/map-address';
+import {readAttachedPhoto} from '@/lib/mcp-photo';
 import {photoResearchThumbnail} from '@/lib/photo-research';
 import {searchAddresses, ServiceError, verifyAddress} from '@/lib/providers';
 import {generatePlaceAnswer, placeAnswerStats, pickScenes, validateAnswer, sceneSource, logClientDocent, QUESTION_TYPES} from '@/lib/place-answer';
@@ -16,6 +17,13 @@ const MAX_BODY_BYTES = 32768;
 const headers = {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'};
 
 const tools: McpTool[] = [
+  {
+    name:'extract_photo_location',
+    description:'사용자가 첨부한 원본 JPEG/HEIC 사진 파일에서 실제 EXIF GPS·촬영일을 읽고 서울 주소 후보를 반환합니다. 이미지 외관으로 추측하지 않습니다. 파일 첨부를 file로 전달하세요. GPS가 제거됐으면 원본 재첨부·웹 원본 선택·주소 입력을 안내하세요. 반환된 주소는 촬영 위치이며 사용자가 확인한 후보 token으로 prepare_place_answer를 호출한 뒤 사진·영상·출처를 포함한 도슨트를 작성하세요. 원본은 처리 중 메모리에서만 읽고 저장하지 않습니다.',
+    inputSchema:{type:'object',properties:{file:{type:'object',properties:{download_url:{type:'string',maxLength:12000},file_id:{type:'string',maxLength:300},mime_type:{type:'string',maxLength:100},file_name:{type:'string',maxLength:300}},required:['download_url','file_id'],additionalProperties:false}},additionalProperties:false},
+    _meta:{'openai/fileParams':['file']},
+    annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:true}
+  },
   {
     name:'resolve_photo_location',
     description:'사진 EXIF 또는 사용자가 공유한 실제 GPS 좌표를 서울 주소 후보로 변환합니다. latitude=위도, longitude=경도입니다. 사진을 보고 좌표를 추측하지 마세요. GPS가 전달되지 않았다면 빈 입력으로 안내를 받거나 주소를 요청하세요. 후보는 사용자가 확인한 후 token으로 조회하세요. 촬영 위치는 피사체의 건물·부지 동일성을 증명하지 않습니다.',
@@ -113,6 +121,7 @@ const answerInput = z.object({
 
 const locationInput=z.object({latitude:z.number().finite().min(-90).max(90).optional(),longitude:z.number().finite().min(-180).max(180).optional()}).strict()
   .refine(v=>(v.latitude===undefined)===(v.longitude===undefined),{message:'위도와 경도를 함께 전달하세요'});
+const photoInput=z.object({file:z.object({download_url:z.string().min(1).max(12000),file_id:z.string().min(1).max(300),mime_type:z.string().max(100).optional(),file_name:z.string().max(300).optional()}).strict().optional()}).strict();
 const validationInput=z.object({
   token:z.string().min(1).max(6000),question:z.string().trim().max(300).optional(),
   answer:z.object({question_type:z.enum(QUESTION_TYPES),
@@ -124,6 +133,14 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
   const startedAt=Date.now();
   try {
     switch (name) {
+      case 'extract_photo_location': {
+        const {file}=photoInput.parse(args);
+        if(!file)return textResult({status:'needs_file',nextAction:'GPS가 보존된 원본 JPEG/HEIC를 파일로 첨부해 주세요. 첨부가 MCP에 전달되지 않으면 https://seoul-place-history.xeonire.chatgpt.site 에서 원본 사진을 선택하고 확인된 주소를 공유하세요.',note:'이미지 미리보기만으로 좌표를 추측하지 마세요.'});
+        const {location,capturedAt,utcOffset}=await readAttachedPhoto(file.download_url);
+        if(location.status!=='ready')return textResult({status:location.status,locationSource:'photo_exif',nextAction:location.status==='outside_seoul'?'서울 지역 원본 사진 또는 서울 주소를 입력해 주세요.':'촬영 위치정보가 보존된 원본 JPEG/HEIC를 다시 첨부하거나 웹에서 원본 사진·현재 위치·주소 입력을 사용하세요.',note:'위치를 추정하지 않았습니다. 스크린샷·공유 과정에서 GPS가 제거될 수 있습니다.'});
+        const result=await mapAddress(location.point.x,location.point.y,env);
+        return textResult({...result,status:result.candidates.length?'confirm_address':'needs_address',needsConfirmation:true,locationSource:'photo_exif',coordinates:{latitude:location.point.y,longitude:location.point.x},capturedAt,capturedAtUtcOffset:utcOffset,capturedAtNote:utcOffset?'카메라 기록 시각·UTC 오프셋':'카메라 기록 시각이며 시간대는 미확인입니다.',photoStored:false,note:'촬영 위치의 주소 후보입니다. 피사체의 건물·부지와 같다고 단정하지 마세요. 후보를 확인한 뒤 token으로 prepare_place_answer를 호출하세요.'});
+      }
       case 'resolve_photo_location': {
         const input=locationInput.parse(args);
         if(input.latitude===undefined||input.longitude===undefined)return textResult({status:'needs_location',nextAction:'주소 입력 또는 위치 공유를 요청하세요. 사진만 있다면 도슨트 웹에서 원본 사진을 선택해 주소를 확인할 수 있습니다.',note:'AI 앱에서 사진 GPS가 전달되지 않을 수 있습니다. 이미지 모습으로 위치를 추측하지 마세요.'});
@@ -203,7 +220,8 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
         const packet=await generatePlaceAnswer({address,story,question:input.question,questionType:input.questionType});
         await logClientDocent(env.DB,{event:'retrieval',ms:Date.now()-startedAt,ok:packet.status==='ready',records:packet.neighborhood.selected,type:input.questionType});
         const videos=await getDocentVideoCandidates(address.sggNm,address.emdNm);
-        return textResult({...packet,videos,instructions:packet.instructions+'\n10) 관련 영상은 별도 참고자료로 안내하세요. 역사 서술의 검증 근거에는 neighborhood 기록 ID를 사용하세요. 원자료 시간과 독립 검증 상태를 구분하세요. verifiedSegments만 검증된 시간 링크이며 비어 있으면 playbackStatus의 재생구간 미검증을 명시하세요. 영상 후보를 입력 건물의 과거 모습으로 단정하지 마세요.'});
+        const photos=packet.neighborhood.records.filter(record=>record.source.photo).slice(0,3).map(record=>({evidenceId:record.id,title:record.title,date:record.date,scope:record.scope,...record.source.photo!}));
+        return textResult({...packet,videos,visuals:{photos,photoCount:photos.length,videoCount:videos.records.length,emptyNote:photos.length||videos.records.length?null:'주소에 연결된 표시 가능한 시각자료가 없습니다. 자료 없음으로 안내하세요.'},instructions:packet.instructions+'\n10) visuals.photos의 imageUrl이 있으면 사진을 Markdown 이미지로 직접 표시하고 시기·기관·원문·공간 범위를 붙이세요. 사진이 없으면 없다고 명시하세요. 관련 영상은 제목·원문 링크로 별도 안내하세요. 역사 서술의 검증 근거에는 neighborhood 기록 ID를 사용하세요. 원자료 시간과 독립 검증 상태를 구분하세요. verifiedSegments만 검증된 시간 링크이며 비어 있으면 playbackStatus의 재생구간 미검증을 명시하세요. 영상 후보를 입력 건물의 과거 모습으로 단정하지 마세요.'});
       }
       case 'get_answer_stats': {
         const input = z.object({days: z.number().int().min(1).max(365).default(30)}).strict().parse(args);

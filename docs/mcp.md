@@ -95,3 +95,10 @@ HTTP 요청에는 `Content-Type: application/json`, `Accept: application/json, t
 - `prepare_place_answer`의 `videos.records`는 기존 영상 카탈로그에서 찾은 최대 3개 후보입니다. 구간에는 원자료 시간 및 확인 상태가 포함됩니다. 구간이 기재되지 않은 경우와 구간 자료를 읽지 못한 경우는 `segmentStatus`로 구분합니다. 영상은 참고자료이며 문단의 기계적 검증에는 기존 역사 기록 ID를 사용합니다.
 
 사진/현재 위치 결과의 운영자 AI 생성은 버튼으로 실행합니다. `videos.records[].verifiedSegments`만 검증된 시간 링크이며, 없으면 `playbackStatus`에 재생구간 미검증을 표시합니다. 기존 원자료 시간과 혼동하지 마세요. [사진 기반 구현·검증 보고서](photo-docent-implementation.md)를 참고하세요.
+
+
+## 원본 사진 파일 입력 (2026-11-08)
+
+`extract_photo_location`은 `_meta["openai/fileParams"]: ["file"]`로 원본 JPEG/HEIC를 받습니다. file 객체는 download_url·file_id(필수), mime_type·file_name(선택)을 선언합니다. 원본은 허용된 호스트의 HTTPS 임시 URL에서만 가져오며 redirect 금지, 20MiB·15초 제한을 적용합니다. GPS·촬영일 외 메타데이터는 반환하지 않고 파일을 저장하지 않습니다. 파일이 없으면 needs_file, GPS가 없으면 no_gps를 반환하며 추측하지 않습니다. 주소 후보 확인 후 기존 prepare_place_answer를 호출합니다.
+
+근거 응답에는 기존 neighborhood·videos 외에 대표 사진 최대 3개의 visuals.photos를 제공합니다. imageUrl은 사진 직접 표시, sourceUrl·date·scope는 출처·시기·범위 설명에 사용합니다. 다른 AI의 파일 전달은 OpenAI 확장과 별개로 실증해야 합니다. [실행 계획](photo-mcp-execution-plan.md) 참조.
