@@ -1,5 +1,13 @@
 # 공개 MCP 전용 Vercel 배포
 
+## GitHub 자동 배포 설정
+
+기존 `seoul-place-docent-mcp` 프로젝트를 `xeonica/seoul-place-docent` 저장소의 `main`에 연결합니다. 프로젝트 Root Directory는 `deploy/public-mcp`, Include source files outside Root Directory는 켜짐, Framework는 Other, Build Command는 `node git-build.mjs`, Install Command는 빈 값, Output Directory는 override 없이 둡니다. Node는 22.x입니다. `deploy/public-mcp/vercel.json`이 루트 홈페이지용 Next.js 설정과 MCP 빌드를 구분합니다.
+
+이 빌드는 Vercel이 체크아웃한 정확한 커밋에서 기존 MCP Build Output API 패키지를 만들고 현재 프로젝트의 `.vercel/output`에 복사합니다. 기존 서버 환경변수와 Production 도메인을 유지합니다. Vercel 계정의 GitHub 연결·저장소 권한은 별도로 필요하며, 코드·메타데이터만으로 OAuth 동의를 대신할 수 없습니다. 연결한 뒤 실제 Git push로 생성된 deployment의 gitSource SHA·READY·/health·MCP 조회를 확인해야 자동 연동 완료입니다.
+
+`bootstrap.mjs`로 공개 Git SHA를 내려받는 방식은 해당 커밋을 배포하는 대체 경로이며 push 자동 연동은 아닙니다.
+
 ## 원인과 배포 범위
 
 Sites 홈페이지는 공개지만 Sites가 `/mcp` 앞단에서 OAuth를 요구합니다. 코드의 Origin·Accept 검사를 없애도 Sites가 반환하는 401은 해결되지 않습니다. 별도의 공개 MCP 서버를 배포합니다. 홈페이지·기존 Vercel 웹 설정·역사 데이터·사진·영상·기존 AI API는 그대로 유지합니다.

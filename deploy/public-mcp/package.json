@@ -1,0 +1,7 @@
+{
+  "name": "seoul-place-docent-mcp-git",
+  "private": true,
+  "type": "module",
+  "engines": {"node": "22.x"},
+  "scripts": {"build": "node git-build.mjs"}
+}
