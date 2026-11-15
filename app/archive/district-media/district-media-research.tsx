@@ -47,9 +47,9 @@ const photoStatus=['확인수준','원문확인수준','원문확인상태','자
 const articleRights=['저작권/재사용','저작권_재사용','copyright_note','copyright_status','copyright_status','재사용_권한','저작권·재사용','저작권·재사용가능'];
 const photoRights=['개별이용조건','이용조건','웹게시가능여부','사이트표시허용','사이트표시가능여부','화면캡처·썸네일허용여부','서비스 재사용허용여부','서비스재사용허용여부','저작권상태','권리상태','권리·라이선스','rights_check','copyright_status'];
 
-export default function DistrictMediaResearch({manifest}:{manifest:Manifest}){
+export default function DistrictMediaResearch({manifest,mode='articles',embedded=false}:{manifest:Manifest;mode?:'articles'|'photos';embedded?:boolean}){
   const [district,setDistrict]=useState(manifest.districts[0]||'');
-  const [kind,setKind]=useState<'articles'|'photos'>('articles');
+  const kind=mode;
   const [query,setQuery]=useState('');
   const [page,setPage]=useState(1);
   const [records,setRecords]=useState<CsvRecord[]>([]);
@@ -76,17 +76,17 @@ export default function DistrictMediaResearch({manifest}:{manifest:Manifest}){
   const pages=Math.max(1,Math.ceil(filtered.length/pageSize));
   const visible=filtered.slice((page-1)*pageSize,page*pageSize);
 
-  return <main className="district-media-page">
-    <header className="district-media-top"><a href="/archive"><ArrowLeft size={16}/>자료실로</a><span>서울 장소 도슨트</span><span>구별 수집 조사자료</span></header>
-    <section className="district-media-hero"><div className="eyebrow"><FileText size={15}/>DISTRICT RESEARCH COLLECTION</div><h1>구별 사진·기사<br/><em>조사자료 모아보기.</em></h1><p>제공된 CSV 원문을 구와 자료 종류별로 살펴보고, 제목·장소·시기·검토 표기를 검색합니다.</p></section>
-    <section className="district-media-note"><Info size={17}/><p>{manifest.note} 이 목록은 장소별 도슨트 설명에 자동 사용되지 않습니다. 미리보기 이미지를 복사하지 않으며, 원문·이용조건은 각 제공처에서 확인해야 합니다.</p></section>
+  const Root=embedded?'section':'main';
+  return <Root className={`district-media-page${embedded?' district-media-embedded':''}`}>
+    {!embedded&&<header className="district-media-top"><a href="/archive"><ArrowLeft size={16}/>자료실로</a><span>서울 장소 도슨트</span><span>구별 조사자료</span></header>}
+    {embedded?<div className="district-media-embed-heading"><h2>구별 수집 사진·지도 자료</h2><p>제공된 구별 사진·지도 CSV를 기존 사진 조사자료에 추가했습니다. 자치구를 선택하거나 자료명·장소·시기·기관명으로 검색하세요.</p></div>:<section className="district-media-hero"><div className="eyebrow"><FileText size={15}/>DISTRICT ARTICLE COLLECTION</div><h1>구별 기사<br/><em>조사자료 모아보기.</em></h1><p>제공된 기사 CSV를 자치구별로 살펴보고, 제목·장소·시기·언론사와 검토 표기를 검색합니다.</p></section>}
+    <section className="district-media-note"><Info size={17}/><p>{manifest.note} 이 목록은 장소별 도슨트 설명에 자동 사용되지 않습니다. 원문 파일이나 사진 이미지를 복사해 게시하지 않으며, 원문·이용조건은 각 제공처에서 확인해야 합니다.</p></section>
     <section className="district-media-controls" aria-label="자료 필터">
       <label>자치구<select value={district} onChange={event=>setDistrict(event.target.value)}>{manifest.districts.map(name=><option key={name} value={name}>{name}</option>)}</select></label>
-      <label>자료 종류<select value={kind} onChange={event=>setKind(event.target.value as 'articles'|'photos')}><option value="articles">기사</option><option value="photos">사진·지도</option></select></label>
-      <label className="district-media-search"><span>목록 검색</span><div><Search size={16}/><input value={query} onChange={event=>{setQuery(event.target.value);setPage(1);}} placeholder="제목, 장소, 시기, 기관 검색"/></div></label>
+      <label className="district-media-search"><span>{kind==='articles'?'기사 검색':'사진·지도 자료 검색'}</span><div><Search size={16}/><input value={query} onChange={event=>{setQuery(event.target.value);setPage(1);}} placeholder={kind==='articles'?'제목, 장소, 시기, 언론사 검색':'자료명, 장소, 시기, 기관 검색'}/></div></label>
     </section>
     <section className="district-media-results" aria-live="polite" aria-busy={loading}>
-      {dataset?<div className="district-media-results-head"><div><h2>{district} · {kind==='articles'?'기사':'사진·지도'} 자료</h2><p>{dataset.rowCount.toLocaleString('ko-KR')}행 · 원본 {Math.ceil(dataset.sizeBytes/1024).toLocaleString('ko-KR')}KB (압축 {Math.ceil(dataset.compressedSizeBytes/1024).toLocaleString('ko-KR')}KB) · {dataset.encoding.toUpperCase()} · 파일명 {dataset.originalName}</p></div><a href={dataset.url} download={dataset.file}><Download size={15}/>압축 원본 CSV</a></div>:<div className="district-media-missing"><ImageIcon size={23}/><p>{district} 사진·지도 CSV를 찾을 수 없습니다. 제공된 자료 묶음에 해당 자료가 있는지 확인해 주세요.</p></div>}
+      {dataset?<div className="district-media-results-head"><div><h2>{district} · {kind==='articles'?'기사':'사진·지도'} 자료</h2><p>{dataset.rowCount.toLocaleString('ko-KR')}행 · 원본 {Math.ceil(dataset.sizeBytes/1024).toLocaleString('ko-KR')}KB (압축 {Math.ceil(dataset.compressedSizeBytes/1024).toLocaleString('ko-KR')}KB) · {dataset.encoding.toUpperCase()} · 파일명 {dataset.originalName}</p></div><a href={dataset.url} download={dataset.file}><Download size={15}/>압축 원본 CSV</a></div>:<div className="district-media-missing"><ImageIcon size={23}/><p>{district} 자료 CSV를 찾을 수 없습니다. 제공된 자료 묶음에 해당 자료가 있는지 확인해 주세요.</p></div>}
       {dataset?.classificationNote&&<p className="district-media-classification">{dataset.classificationNote}</p>}
       {loading?<p className="district-media-state"><Loader2 size={16} className="spin"/>자료를 불러오고 있습니다.</p>:error?<p className="district-media-state" role="alert">{error}</p>:dataset&&<>
         <p className="district-media-count">검색 결과 {filtered.length.toLocaleString('ko-KR')}건 · {page}/{pages}페이지</p>
@@ -113,6 +113,6 @@ export default function DistrictMediaResearch({manifest}:{manifest:Manifest}){
         {filtered.length>pageSize&&<nav className="district-media-pagination" aria-label="조사자료 페이지"><button type="button" onClick={()=>setPage(number=>Math.max(1,number-1))} disabled={page<=1}>이전</button><span>{page} / {pages}</span><button type="button" onClick={()=>setPage(number=>Math.min(pages,number+1))} disabled={page>=pages}>다음</button></nav>}
       </>}
     </section>
-    <footer className="district-media-footer"><a href="/archive/photo-research">통합 사진·지도 조사자료 보기<ArrowUpRight size={13}/></a><a href="/archive/document-research">문헌 조사자료 보기<ArrowUpRight size={13}/></a><span>제공된 행의 원문 표기와 이용조건을 별도로 확인해 주세요.</span></footer>
-  </main>;
+    {!embedded&&<footer className="district-media-footer"><a href="/archive/photo-research">사진·지도 조사자료 보기<ArrowUpRight size={13}/></a><a href="/archive/document-research">문헌 조사자료 보기<ArrowUpRight size={13}/></a><span>제공된 행의 원문 표기와 이용조건을 별도로 확인해 주세요.</span></footer>}
+  </Root>;
 }

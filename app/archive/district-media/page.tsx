@@ -1,7 +1,5 @@
-import manifest from '@/data/district-media/manifest.json';
-import DistrictMediaResearch, {type Manifest} from './district-media-research';
-import './district-media.css';
+import {redirect} from 'next/navigation';
 
 export default function DistrictMediaPage() {
-  return <DistrictMediaResearch manifest={manifest as unknown as Manifest} />;
+  redirect('/archive/article-research');
 }

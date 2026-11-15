@@ -4,6 +4,7 @@ import {ArrowLeft, ArrowUpRight, Camera, ChevronLeft, ChevronRight, Download, Fi
 import PhotoPreview from '@/app/components/PhotoPreview';
 import {photoResearchCredit, photoProviderLabels, photoResearchText, photoResearchThumbnail, photoResearchUrl, type PhotoResearchFilters, type PhotoResearchItem, type PhotoResearchMeta} from '@/lib/photo-research';
 import IntegratedResearchPanel from './integrated-research-panel';
+import DistrictMediaResearch, {type Manifest} from '../district-media/district-media-research';
 
 type View = PhotoResearchFilters & {page: number};
 type Results = {total: number; page: number; pageSize: number; rows: PhotoResearchItem[]; sourceUrlCount: number; candidateCount: number};
@@ -12,7 +13,7 @@ function External({value, children}: {value: string; children?: React.ReactNode}
   const url = photoResearchUrl(value);
   return url ? <a href={url} target="_blank" rel="noopener noreferrer">{children || value}<ArrowUpRight size={13}/></a> : <>{value}</>;
 }
-export default function PhotoResearch({meta}: {meta: PhotoResearchMeta}) {
+export default function PhotoResearch({meta,districtMedia}: {meta: PhotoResearchMeta; districtMedia: Manifest}) {
   const [view, setView] = useState<View>({page: 1});
   const [ready, setReady] = useState(false);
   const [data, setData] = useState<Results | null>(null);
@@ -106,6 +107,6 @@ export default function PhotoResearch({meta}: {meta: PhotoResearchMeta}) {
     <section className="photo-results" id="photo-results" aria-busy={loading}><div className="photo-results-heading"><h2>{activeBatch ? (activeBatch.dong || activeBatch.district || '서울 전역 통합조사') + ' · ' : ''}조사목록 <span>{num(data?.total || 0)}건</span></h2><a href={'/api/archive/photo-research?' + query + '&download=1'}><Download size={14}/>현재 조건 JSON</a></div><p className="photo-list-note">{data ? `현재 조건의 접속 URL ${data.sourceUrlCount}개 · 원문 미확인 후보 ${data.candidateCount}건` : '제공기관의 자료 원문과 장소 관계를 함께 확인합니다.'} · 항목의 ‘확인’은 첨부 자료의 표기입니다.</p>{activeBatch?.sourceNote && <p className="photo-location-note">{activeBatch.sourceNote.replace(/^#\s*/, '')}</p>}
       {loading ? <div className="photo-empty" role="status"><Loader2 className="spin" size={24}/><p>사진 조사자료를 불러오는 중입니다.</p></div> : error ? <div className="photo-empty" role="alert"><Info size={24}/><p>{error}</p><button type="button" onClick={() => setRefresh(n => n + 1)}>다시 불러오기</button></div> : data?.rows.length ? <div className="photo-grid">{data.rows.map(itemCard)}</div> : <div className="photo-empty"><Search size={25}/><h3>조건에 맞는 조사 항목이 없습니다.</h3><p>이 동네에 사진 기록이 없다는 의미는 아닙니다. 다른 조건으로 확인해 보세요.</p><button type="button" onClick={() => setView({page: 1})}>전체 조사목록 보기</button></div>}
       {!loading && !error && <nav className="photo-pagination" aria-label="사진 조사목록 페이지"><span>{data?.total ? `${(data.page - 1) * 20 + 1}–${Math.min(data.page * 20, data.total)} / ${num(data.total)}건` : '0건'}</span><div><button type="button" disabled={(data?.page || 1) <= 1} onClick={() => setView(v => ({...v, page: (data?.page || 1) - 1}))}><ChevronLeft size={14}/>이전</button><span>{data?.page || 1} / {pages}</span><button type="button" disabled={(data?.page || 1) >= pages} onClick={() => setView(v => ({...v, page: (data?.page || 1) + 1}))}>다음<ChevronRight size={14}/></button></div></nav>}
-    </section><footer className="photo-footer"><a href="/archive/document-research">문헌 조사자료<ArrowUpRight size={14}/></a><a href="/archive/video-research">영상 조사자료<ArrowUpRight size={14}/></a><span>서울 장소 도슨트 · 장면과 장소의 관계를 기록으로 확인합니다.</span></footer>
+    </section><DistrictMediaResearch manifest={districtMedia} mode="photos" embedded/><footer className="photo-footer"><a href="/archive/article-research">기사 조사자료<ArrowUpRight size={14}/></a><a href="/archive/document-research">문헌 조사자료<ArrowUpRight size={14}/></a><a href="/archive/video-research">영상 조사자료<ArrowUpRight size={14}/></a><span>서울 장소 도슨트 · 장면과 장소의 관계를 기록으로 확인합니다.</span></footer>
   </main>;
 }

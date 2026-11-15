@@ -1,0 +1,7 @@
+.district-media-embedded{max-width:none;margin:48px 0;padding:38px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.district-media-embed-heading{margin-bottom:20px}
+.district-media-embed-heading h2{margin:0 0 8px;font-size:24px;font-weight:560;color:var(--ink)}
+.district-media-embed-heading p{max-width:760px;margin:0;color:var(--muted);font-size:13px;line-height:1.8}
+.district-media-embedded .district-media-controls{grid-template-columns:minmax(180px,1fr) minmax(260px,2fr);margin:18px 0 12px}
+.district-media-embedded .district-media-note{margin:14px 0}
+@media(max-width:620px){.district-media-embedded{margin:32px 0;padding:26px 0}.district-media-embedded .district-media-controls{grid-template-columns:1fr}.district-media-embed-heading h2{font-size:20px}}
