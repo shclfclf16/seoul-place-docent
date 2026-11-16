@@ -32,6 +32,7 @@ RECORD_FIELDS = [
     "checked_date", "duplicate_status", "record_origin",
 ]
 PLACE_FIELDS = ["place_id", "place_name", "current_address", "district", "legal_dong", "legal_dong_code", "historical_names", "historical_period", "location_review_status", "notes"]
+PLACE_OPTIONAL_FIELDS = ["latitude", "longitude", "coordinate_system"]
 LINK_FIELDS = ["record_id", "place_id", "relation_type", "relation_evidence", "link_review_status"]
 DATE_FIELDS = {"published_date", "checked_date"}
 YEAR_FIELDS = {"created_year", "subject_start_year", "subject_end_year"}
@@ -160,10 +161,24 @@ def validate_catalog():
         if not identity: reasons.append("EMPTY_PLACE_ID")
         if index in place_duplicates: reasons.append("DUPLICATE_PLACE_ID")
         if not clean(row.get("place_name")) or not clean(row.get("location_review_status")): reasons.append("MISSING_REQUIRED_PLACE_FIELD")
+        cooked = dict(row)
+        for field in PLACE_OPTIONAL_FIELDS: cooked.setdefault(field, "")
+        lat, lon, coordinate_system = (clean(cooked.get(key)) for key in PLACE_OPTIONAL_FIELDS)
+        if bool(lat) != bool(lon): reasons.append("INCOMPLETE_COORDINATE_PAIR")
+        elif lat and lon:
+            try:
+                lat_value, lon_value = float(lat), float(lon)
+                if not (-90 <= lat_value <= 90 and -180 <= lon_value <= 180): raise ValueError()
+                if coordinate_system not in {"EPSG:4326", "WGS84"}: raise ValueError()
+                cooked["latitude"], cooked["longitude"] = lat_value, lon_value
+                cooked["coordinate_system"] = "EPSG:4326"
+            except (ValueError, OverflowError): reasons.append("INVALID_COORDINATE_OR_CRS")
+        elif coordinate_system:
+            reasons.append("COORDINATE_SYSTEM_WITHOUT_COORDINATES")
         if reasons:
             issues.append({"file": str(FILES["places"][0].relative_to(ROOT)), "line": line, "record_id": identity, "reason": "|".join(reasons)})
         else:
-            valid_places.append(dict(row))
+            valid_places.append(cooked)
 
     for link_index, (line, row) in enumerate(raw_links):
         record_id, place_id = clean(row.get("record_id")), clean(row.get("place_id"))
@@ -242,7 +257,9 @@ def schemas():
             bigquery.SchemaField("ingested_at", "TIMESTAMP", mode="REQUIRED"), bigquery.SchemaField("updated_at", "TIMESTAMP", mode="REQUIRED"),
             bigquery.SchemaField("content_hash", "STRING", mode="REQUIRED"), bigquery.SchemaField("ingestion_run_id", "STRING", mode="REQUIRED"),
         ],
-        "places": [bigquery.SchemaField(name, "STRING", mode="REQUIRED" if name in {"place_id", "place_name", "location_review_status"} else "NULLABLE") for name in PLACE_FIELDS] + [bigquery.SchemaField("source_payload", "JSON", mode="REQUIRED"),
+        "places": [bigquery.SchemaField(name, "STRING", mode="REQUIRED" if name in {"place_id", "place_name", "location_review_status"} else "NULLABLE") for name in PLACE_FIELDS] + [
+            bigquery.SchemaField("latitude", "FLOAT64"), bigquery.SchemaField("longitude", "FLOAT64"), bigquery.SchemaField("coordinate_system", "STRING"),
+            bigquery.SchemaField("source_payload", "JSON", mode="REQUIRED"),
             bigquery.SchemaField("updated_at", "TIMESTAMP", mode="REQUIRED"), bigquery.SchemaField("content_hash", "STRING", mode="REQUIRED"), bigquery.SchemaField("ingestion_run_id", "STRING", mode="REQUIRED")],
         "record_place_links": [bigquery.SchemaField(name, "STRING", mode="REQUIRED" if name in {"record_id", "relation_type", "link_review_status"} else "NULLABLE") for name in LINK_FIELDS] + [bigquery.SchemaField("source_payload", "JSON", mode="REQUIRED"),
             bigquery.SchemaField("updated_at", "TIMESTAMP", mode="REQUIRED"), bigquery.SchemaField("content_hash", "STRING", mode="REQUIRED"), bigquery.SchemaField("ingestion_run_id", "STRING", mode="REQUIRED")],

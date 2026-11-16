@@ -22,7 +22,7 @@
 `bigquery/schema.sql`은 다음 새 테이블을 `CREATE TABLE IF NOT EXISTS`로 준비합니다. 기존 네 열짜리 `historical_records_test`는 사용하거나 수정하지 않습니다.
 
 - `historical_records`: 자료·기관·원문·시기·권리·검토·중복 메타데이터와 출처 원본 payload
-- `places`: 장소명·주소·자치구·법정동·법정동 코드·역사 지명·위치 검토 상태
+- `places`: 장소명·주소·자치구·법정동·법정동 코드·WGS84 좌표(있을 때만)·역사 지명·위치 검토 상태
 - `record_place_links`: 자료와 장소의 관계 유형·연결 근거·관계 검토 상태
 - `ingestion_runs`, `ingestion_run_sources`: 가져오기 작업 이력과 파일별 진행 상태
 
