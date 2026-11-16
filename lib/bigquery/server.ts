@@ -1,5 +1,6 @@
 import type {GoogleAuth} from 'google-auth-library';
 import {BigQueryAuthError, readHistoricalRecords} from './records';
+import {readVerifiedPlaceRecords, placeRecordsAsScenes} from './place-records';
 
 const scopes = ['https://www.googleapis.com/auth/cloud-platform'];
 let adc: GoogleAuth | undefined;
@@ -87,4 +88,10 @@ export async function exchangeVercelCredentials(
 /** Node server only. Future evidence consumers can use the same result contract. */
 export function getBigQueryHistoricalRecords() {
   return readHistoricalRecords(process.env, {getToken: accessToken});
+}
+
+/** Public evidence search: rows are filtered by review and reuse status before leaving BigQuery. */
+export async function getBigQueryPlaceHistory(district:string,dong:string) {
+  const result=await readVerifiedPlaceRecords(process.env,{district,dong},{getToken:accessToken});
+  return {status:result.status,scenes:result.status==='ok'?placeRecordsAsScenes(result.records):[],...(result.status==='ok'?{location:result.location}:{})};
 }

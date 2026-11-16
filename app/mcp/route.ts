@@ -1,4 +1,5 @@
 import {env} from '@/lib/runtime-env';
+import {addBigQueryEvidence} from '@/lib/bigquery/docent';
 import {z} from 'zod';
 import {archiveStats, database} from '@/lib/archive-db';
 import {getDocentStory, getFullDocentStory} from '@/lib/docent-data';
@@ -150,13 +151,14 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
       case 'validate_place_answer': {
         const started=Date.now();const input=validationInput.parse(args);
         const address=await verifyAddress(input.token,env);
-        const story=getFullDocentStory(address.sggNm,address.emdNm);
+        const baseStory=getFullDocentStory(address.sggNm,address.emdNm);
+        const {story,bigQueryStatus}=await addBigQueryEvidence(baseStory);
         const question=input.question||story.dong+'의 시간을 안내해 주세요.';
         const scenes=pickScenes(story,question,14,address.bdNm);
         const checked=validateAnswer(input.answer,scenes);
         await logClientDocent(env.DB,{event:'validation',ms:Date.now()-started,ok:checked.omitted===0,records:scenes.length,type:checked.questionType,kept:checked.paragraphs.length,omitted:checked.omitted});
         const used=new Set(checked.paragraphs.flatMap(p=>p.evidenceIds));
-        return textResult({...checked,sources:scenes.filter(s=>used.has(s.id)).map(sceneSource),valid:checked.paragraphs.length>0&&checked.omitted===0,
+        return textResult({...checked,sources:scenes.filter(s=>used.has(s.id)).map(sceneSource),dataSources:{bigQuery:bigQueryStatus},valid:checked.paragraphs.length>0&&checked.omitted===0,
           verification:'mechanical_only',note:'근거 id·숫자·길이 검사입니다. 의미적 사실 일치와 장소 동일성은 별도로 확인해야 합니다.'});
       }
       case 'search_place': {
@@ -166,7 +168,8 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
       case 'get_place_history': {
         const input = historyInput.parse(args);
         const address = await verifyAddress(input.token, env);
-        const story = getDocentStory(address.sggNm, address.emdNm, [address.bdNm].filter(Boolean));
+        const baseStory = getDocentStory(address.sggNm, address.emdNm, [address.bdNm].filter(Boolean));
+        const {story,bigQueryStatus} = await addBigQueryEvidence(baseStory);
         const scenes = story.scenes.slice(input.offset, input.offset + input.limit).map(scene => ({
           id: scene.id,
           kind: scene.kind,
@@ -201,6 +204,7 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
             photoGroups: story.photoGroups,
             unpictured: story.unpictured,
           },
+          dataSources:{bigQuery:bigQueryStatus},
           note: '장면은 동네 또는 자치구 범위의 기록입니다. 입력한 건물·부지와의 동일성을 뜻하지 않습니다. 출처별 확인 범위를 함께 읽어 주세요.',
         });
       }
@@ -216,12 +220,13 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
           token = found.candidates[0].token;
         }
         const address = await verifyAddress(token, env);
-        const story = getFullDocentStory(address.sggNm, address.emdNm);
+        const baseStory = getFullDocentStory(address.sggNm, address.emdNm);
+        const {story,bigQueryStatus} = await addBigQueryEvidence(baseStory);
         const packet=await generatePlaceAnswer({address,story,question:input.question,questionType:input.questionType});
         await logClientDocent(env.DB,{event:'retrieval',ms:Date.now()-startedAt,ok:packet.status==='ready',records:packet.neighborhood.selected,type:input.questionType});
         const videos=await getDocentVideoCandidates(address.sggNm,address.emdNm);
         const photos=packet.neighborhood.records.filter(record=>record.source.photo).slice(0,3).map(record=>({evidenceId:record.id,title:record.title,date:record.date,scope:record.scope,...record.source.photo!}));
-        return textResult({...packet,videos,visuals:{photos,photoCount:photos.length,videoCount:videos.records.length,emptyNote:photos.length||videos.records.length?null:'주소에 연결된 표시 가능한 시각자료가 없습니다. 자료 없음으로 안내하세요.'},instructions:packet.instructions+'\n10) visuals.photos의 imageUrl이 있으면 사진을 Markdown 이미지로 직접 표시하고 시기·기관·원문·공간 범위를 붙이세요. 사진이 없으면 없다고 명시하세요. 관련 영상은 제목·원문 링크로 별도 안내하세요. 역사 서술의 검증 근거에는 neighborhood 기록 ID를 사용하세요. 원자료 시간과 독립 검증 상태를 구분하세요. verifiedSegments만 검증된 시간 링크이며 비어 있으면 playbackStatus의 재생구간 미검증을 명시하세요. 영상 후보를 입력 건물의 과거 모습으로 단정하지 마세요.'});
+        return textResult({...packet,dataSources:{bigQuery:bigQueryStatus},videos,visuals:{photos,photoCount:photos.length,videoCount:videos.records.length,emptyNote:photos.length||videos.records.length?null:'주소에 연결된 표시 가능한 시각자료가 없습니다. 자료 없음으로 안내하세요.'},instructions:packet.instructions+'\n10) visuals.photos의 imageUrl이 있으면 사진을 Markdown 이미지로 직접 표시하고 시기·기관·원문·공간 범위를 붙이세요. 사진이 없으면 없다고 명시하세요. 관련 영상은 제목·원문 링크로 별도 안내하세요. 역사 서술의 검증 근거에는 neighborhood 기록 ID를 사용하세요. 원자료 시간과 독립 검증 상태를 구분하세요. verifiedSegments만 검증된 시간 링크이며 비어 있으면 playbackStatus의 재생구간 미검증을 명시하세요. 영상 후보를 입력 건물의 과거 모습으로 단정하지 마세요.'});
       }
       case 'get_answer_stats': {
         const input = z.object({days: z.number().int().min(1).max(365).default(30)}).strict().parse(args);
