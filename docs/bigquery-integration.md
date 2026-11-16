@@ -43,7 +43,7 @@ try {
 } finally { Remove-Variable adminKey }
 ```
 
-`403`은 사이트 관리자 키를 먼저 확인합니다. `503` 응답의 `BIGQUERY_AUTH_FAILED`는 ADC 로그인 또는 Vercel 연동 설정, `BIGQUERY_ACCESS_DENIED`는 Google IAM 역할, `BIGQUERY_LOCATION_MISMATCH`는 리전, `BIGQUERY_BUDGET_EXCEEDED`는 예상 처리 바이트를 확인합니다. 서버는 기본 25행, 설정 가능한 최대 100행까지 반환합니다. 예상 처리량을 dry-run으로 검사하고 실행 요청에도 `maximumBytesBilled`를 보냅니다. `LIMIT`은 결과 행 수를 제한하며 비용 상한은 별도로 적용됩니다. [쿼리 비용 상한](https://docs.cloud.google.com/bigquery/docs/troubleshoot-queries)
+`403`은 사이트 관리자 키를 먼저 확인합니다. `503` 응답의 `BIGQUERY_AUTH_FAILED`는 로컬 ADC 로그인, `BIGQUERY_ACCESS_DENIED`는 BigQuery IAM 역할, `BIGQUERY_LOCATION_MISMATCH`는 리전, `BIGQUERY_BUDGET_EXCEEDED`는 예상 처리 바이트를 확인합니다. 서버는 기본 25행, 설정 가능한 최대 100행까지 반환합니다. 예상 처리량을 dry-run으로 검사하고 실행 요청에도 `maximumBytesBilled`를 보냅니다. `LIMIT`은 결과 행 수를 제한하며 비용 상한은 별도로 적용됩니다. [쿼리 비용 상한](https://docs.cloud.google.com/bigquery/docs/troubleshoot-queries)
 
 ## 3. Vercel에서 개인키 없이 연결
 
@@ -51,8 +51,22 @@ try {
 2. Google Cloud의 **IAM 및 관리자 → 서비스 계정**에서 조회 전용 계정을 만들고 1단계의 두 BigQuery 역할을 부여합니다. **API 및 서비스**에서 IAM Service Account Credentials API도 활성화합니다.
 3. **IAM 및 관리자 → Workload Identity Federation**에서 풀과 OIDC 공급자를 만듭니다. 발급자는 `https://oidc.vercel.com/<팀 슬러그>`, Audience는 **Default audience**, 속성 매핑은 `google.subject = assertion.sub`로 설정합니다. 공급자 속성 조건은 `assertion.sub == 'owner:<팀 슬러그>:project:<프로젝트 이름>:environment:preview'`처럼 시험할 배포 환경에 한정합니다.
 4. 서비스 계정의 **권한 → 액세스 권한 부여**에서 `principal://iam.googleapis.com/projects/<프로젝트 번호>/locations/global/workloadIdentityPools/<풀 ID>/subject/owner:<팀 슬러그>:project:<프로젝트 이름>:environment:preview`에 **Workload Identity User**(`roles/iam.workloadIdentityUser`)를 부여합니다. 실제 값으로 채우고 Preview에서 먼저 확인합니다. [Vercel의 Google Cloud OIDC 설정](https://vercel.com/docs/oidc/gcp)
-5. Vercel 프로젝트 **Settings → Environment Variables**의 Preview에 로컬과 같은 `BIGQUERY_*` 조회값을 넣되 `BIGQUERY_AUTH_MODE=vercel-oidc`로 바꿉니다. `BIGQUERY_WIF_PROJECT_NUMBER`(숫자), `BIGQUERY_WIF_POOL_ID`, `BIGQUERY_WIF_PROVIDER_ID`, `BIGQUERY_SERVICE_ACCOUNT_EMAIL`, `ARCHIVE_ADMIN_TOKEN`도 설정합니다. Vercel이 발급한 단기 토큰을 Google 인증 라이브러리가 교환합니다.
+5. Vercel 프로젝트 **Settings → Environment Variables**의 Preview에 로컬과 같은 `BIGQUERY_*` 조회값을 넣되 `BIGQUERY_AUTH_MODE=vercel-oidc`로 바꿉니다. `BIGQUERY_WIF_PROJECT_NUMBER`(숫자), `BIGQUERY_WIF_POOL_ID`, `BIGQUERY_WIF_PROVIDER_ID`, `BIGQUERY_SERVICE_ACCOUNT_EMAIL`, `ARCHIVE_ADMIN_TOKEN`도 설정합니다.
 6. 이 브랜치를 Preview로 배포한 다음 위 PowerShell 예제의 주소를 해당 Preview의 HTTPS 주소로 바꿔 확인합니다. `status: ok`, 실제 `location`, `records.Count`를 확인합니다. 운영 활성화가 필요하면 운영 환경에 해당하는 주체와 환경변수를 별도로 설정합니다.
+
+Google 공급자에 **Default audience**를 선택했다면 `BIGQUERY_VERCEL_OIDC_AUDIENCE_MODE`를 생략하거나 `google-default`로 설정합니다. Vercel에 요청하는 JWT의 `aud`는 `https://iam.googleapis.com/projects/.../providers/...`입니다. 기존 공급자가 **Allowed audiences**에 `https://vercel.com/<팀 슬러그>`를 명시했다면 `vercel-default`로 설정해 Vercel 기본 토큰을 사용합니다. 두 방식 모두 Google STS 요청의 `audience`는 `//iam.googleapis.com/projects/.../providers/...`입니다. Google의 공급자 조건과 서비스 계정의 권한 주체에서 Preview의 팀 슬러그, 실제 Vercel 프로젝트 이름, `environment:preview`가 모두 일치해야 합니다. [Google STS 요청 형식](https://docs.cloud.google.com/iam/docs/reference/sts/rest/v1/TopLevel/token) · [Vercel의 audience 설정](https://vercel.com/docs/oidc/gcp)
+
+### Preview에서 503이 나올 때
+
+| 코드 | 확인할 설정 |
+|---|---|
+| `BIGQUERY_WIF_CONFIG_INVALID` | Preview 환경변수의 프로젝트 번호, 풀·공급자 ID, 서비스 계정 이메일, audience 모드 |
+| `BIGQUERY_VERCEL_OIDC_FAILED` | 해당 Preview 배포의 OIDC 발급 설정. Default audience 방식에서는 Team 발급자와 커스텀 audience 발급도 확인 |
+| `BIGQUERY_STS_EXCHANGE_FAILED` | Google 공급자의 발급자·audience·속성 매핑과 `assertion.sub` 조건 |
+| `BIGQUERY_SERVICE_ACCOUNT_TOKEN_FAILED` | 서비스 계정 이메일과 해당 Preview 주체의 `roles/iam.workloadIdentityUser` 권한 |
+| `BIGQUERY_ACCESS_DENIED` | 서비스 계정의 BigQuery Job User 및 대상 데이터셋 Data Viewer 역할 |
+
+관리자 응답에는 단계별 코드만 포함됩니다. 토큰이나 인증 제공자의 원본 오류를 공유할 필요가 없습니다. [서비스 계정 토큰 발급 권한](https://docs.cloud.google.com/iam/docs/reference/credentials/rest/v1/projects.serviceAccounts/generateAccessToken)
 
 ## 검증 범위
 

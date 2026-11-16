@@ -9,7 +9,13 @@ export type BigQueryResult =
   | {status: 'ok'; location: string; records: HistoricalRecord[]}
   | {status: 'unavailable'; code: string};
 
-type Dependencies = {getToken: () => Promise<string>; fetch?: typeof fetch};
+export class BigQueryAuthError extends Error {
+  constructor(readonly code: 'BIGQUERY_WIF_CONFIG_INVALID' | 'BIGQUERY_VERCEL_OIDC_FAILED' | 'BIGQUERY_STS_EXCHANGE_FAILED' | 'BIGQUERY_SERVICE_ACCOUNT_TOKEN_FAILED') {
+    super(code);
+  }
+}
+
+type Dependencies = {getToken: (signal: AbortSignal) => Promise<string>; fetch?: typeof fetch};
 type QueryResponse = {
   errors?: unknown[];
   totalBytesProcessed?: string;
@@ -40,7 +46,10 @@ export async function readHistoricalRecords(settings: Record<string, string | un
     timer = setTimeout(() => { reject(new Error('BIGQUERY_TIMEOUT')); abort.abort(); }, 12000);
   });
   async function read(): Promise<BigQueryResult> {
-    const token = await deps.getToken().catch(() => '');
+    const token = await deps.getToken(abort.signal).catch(error => {
+      if (error instanceof BigQueryAuthError) throw error;
+      throw new Error('BIGQUERY_AUTH_FAILED');
+    });
     if (!token) throw new Error('BIGQUERY_AUTH_FAILED');
     const root = `https://bigquery.googleapis.com/bigquery/v2/projects/${project}`;
     async function api<T>(path: string, body?: object): Promise<T> {
@@ -78,6 +87,7 @@ export async function readHistoricalRecords(settings: Record<string, string | un
   try {
     return await Promise.race([read(), deadline]);
   } catch (error) {
+    if (error instanceof BigQueryAuthError) return {status: 'unavailable', code: error.code};
     const message = error instanceof Error ? error.message : '';
     return {status: 'unavailable', code: /^BIGQUERY_(TIMEOUT|AUTH_FAILED|ACCESS_DENIED|REQUEST_FAILED|LOCATION_UNKNOWN|LOCATION_MISMATCH|ESTIMATE_FAILED|BUDGET_EXCEEDED|QUERY_FAILED|QUERY_INCOMPLETE|RESULT_TRUNCATED)$/.test(message) ? message : 'BIGQUERY_REQUEST_FAILED'};
   } finally {
