@@ -6,15 +6,29 @@ import {mapAddress} from '@/lib/map-address';
 import {photoResearchThumbnail} from '@/lib/photo-research';
 import {searchAddresses, ServiceError, verifyAddress} from '@/lib/providers';
 import {generatePlaceAnswer, placeAnswerStats, pickScenes, validateAnswer, sceneSource, logClientDocent, QUESTION_TYPES} from '@/lib/place-answer';
-import {handleMcpMessage, rpcError, textResult, type McpTool, type McpToolResult} from '@/lib/mcp-protocol';
+import {handleMcpMessage, rpcError, structuredResult, textResult, type McpTool, type McpToolResult} from '@/lib/mcp-protocol';
 import {auditedCall,clientHint} from '@/lib/mcp-audit';
 import {originError,acceptError,protocolError,allowMcpRequest,unsupportedMcpMethod} from '@/lib/mcp-http';
+import {identifyPlace, readPlaceProfile} from '@/lib/place-entity';
+import {mergeArchiveDocentEvidence,readArchiveDocentEvidence} from '@/lib/archive-docent';
 
 export const dynamic = 'force-dynamic';
 const MAX_BODY_BYTES = 32768;
 const headers = {'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'};
+const placeEntitySchema={type:'object',properties:{placeId:{type:'string'},name:{type:['string','null']},address:{type:'string'},lotAddress:{type:'string'},entityType:{type:'string',enum:['building','parcel']},matchStatus:{type:'string',enum:['confirmed']},identityBasis:{type:'string',enum:['official_building_management_number','official_parcel']},source:{type:'object',properties:{institution:{type:'string'},url:{type:'string'}},required:['institution','url'],additionalProperties:false}},required:['placeId','address','lotAddress','entityType','matchStatus','identityBasis','source'],additionalProperties:false};
+const placeRecordSchema={type:'object',properties:{id:{type:'string'},subjectId:{type:'string'},title:{type:'string'},claim:{type:'string'},scope:{type:'string',enum:['building','parcel']},spatialMatch:{type:'string',enum:['exact','associated']},verification:{type:'string',enum:['source_verified']},observedAt:{type:'string'},source:{type:'object',properties:{id:{type:'string'},institution:{type:'string'},url:{type:'string'}},required:['id','institution','url'],additionalProperties:false},values:{type:'object',additionalProperties:{type:'string'}}},required:['id','subjectId','title','claim','scope','spatialMatch','verification','observedAt','source','values'],additionalProperties:false};
+const entityOutputSchema={type:'object',properties:{status:{type:'string',enum:['confirmed','ambiguous','not_found']},needsChoice:{type:'boolean'},entity:placeEntitySchema,address:{type:'object',additionalProperties:true},candidates:{type:'array',items:{type:'object',additionalProperties:true}},note:{type:'string'}},additionalProperties:true};
+const answerOutputSchema={type:'object',properties:{version:{type:'string'},mode:{type:'string',enum:['client_ai']},status:{type:'string',enum:['ready','no_records']},needsChoice:{type:'boolean'},address:{type:'string'},place:{type:'object',properties:{entity:{anyOf:[placeEntitySchema,{type:'null'}]},records:{type:'array',items:placeRecordSchema},status:{type:'string',enum:['confirmed','ambiguous','unverified']},profileStatus:{type:'string',enum:['confirmed','ambiguous','partial','unavailable']},sources:{type:'array',items:{type:'object',additionalProperties:true}},note:{type:'string'}},additionalProperties:true},neighborhood:{type:'object',additionalProperties:true},facts:{type:'array',items:{type:'object',additionalProperties:true}},media:{type:'array',items:{type:'object',additionalProperties:true}},sources:{type:'array',items:{type:'object',additionalProperties:true}},limitations:{type:'array',items:{type:'string'}},archive:{type:'object',additionalProperties:true}},additionalProperties:true};
+const historyOutputSchema={type:'object',properties:{address:{type:'object',additionalProperties:true},place:{type:'object',properties:{entity:placeEntitySchema,records:{type:'array',items:placeRecordSchema},status:{type:'string'},profileStatus:{type:'string'},sources:{type:'array',items:{type:'object',additionalProperties:true}},limitations:{type:'array',items:{type:'string'}}},additionalProperties:true},archive:{type:'object',additionalProperties:true},neighborhood:{type:'object',additionalProperties:true}},additionalProperties:true};
 
 const tools: McpTool[] = [
+  {
+    name:'resolve_place_entity',
+    description:'공식 주소 후보 token 또는 주소·건물명 검색어를 장소 엔티티로 정규화합니다. 건물관리번호가 있으면 이를 우선하고, 없으면 정확한 법정동·지번으로 ID를 만듭니다. 후보가 여럿이면 선택을 요청하며 이름 유사성만으로 병합하지 않습니다.',
+    inputSchema:{type:'object',properties:{query:{type:'string',minLength:2,maxLength:100,description:'공식 주소 검색에 사용할 주소 또는 건물명'},token:{type:'string',minLength:1,maxLength:6000,description:'search_place가 반환한 주소 token'}},oneOf:[{required:['query']},{required:['token']}],additionalProperties:false},
+    outputSchema:entityOutputSchema,
+    annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:true}
+  },
   {
     name:'resolve_photo_location',
     description:'사진 EXIF 또는 사용자가 공유한 실제 GPS 좌표를 서울 주소 후보로 변환합니다. latitude=위도, longitude=경도입니다. 사진을 보고 좌표를 추측하지 마세요. GPS가 전달되지 않았다면 빈 입력으로 안내를 받거나 주소를 요청하세요. 후보는 사용자가 확인한 후 token으로 조회하세요. 촬영 위치는 피사체의 건물·부지 동일성을 증명하지 않습니다.',
@@ -25,6 +39,7 @@ const tools: McpTool[] = [
     name:'prepare_place_answer',
     description:'사용자 자신의 AI가 분류·도슨트 작성에 사용할 사진·역사·출처와 작성 지침을 반환합니다. 서버 AI 호출은 0회입니다. 먼저 질문 유형을 분류해 questionType에 넣고, 반환된 근거로 당신이 최종 답변을 작성하세요. token 또는 address 중 하나가 필요합니다. 장소와 동네를 구분하고 문단당 근거를 연결하세요.',
     inputSchema:{type:'object',properties:{token:{type:'string',minLength:1,maxLength:6000},address:{type:'string',minLength:2,maxLength:100},question:{type:'string',maxLength:300},questionType:{type:'string',enum:[...QUESTION_TYPES]}},oneOf:[{required:['token']},{required:['address']}],additionalProperties:false},
+    outputSchema:answerOutputSchema,
     annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:true}
   },
   {
@@ -63,6 +78,7 @@ const tools: McpTool[] = [
       required: ['token'],
       additionalProperties: false,
     },
+    outputSchema:historyOutputSchema,
     annotations: {readOnlyHint: true, destructiveHint: false, openWorldHint: false},
   },
   {
@@ -102,6 +118,8 @@ const historyInput = z.object({
   offset: z.number().int().min(0).max(10000).default(0),
   limit: z.number().int().min(1).max(12).default(6),
 }).strict();
+const entityInput=z.object({query:z.string().trim().min(2).max(100).optional(),token:z.string().min(1).max(6000).optional()}).strict()
+  .refine(v=>Boolean(v.query)!==Boolean(v.token),{message:'query 또는 token 중 하나가 필요합니다'});
 
 const answerInput = z.object({
   token: z.string().min(1).max(6000).optional(),
@@ -123,6 +141,17 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
   const startedAt=Date.now();
   try {
     switch (name) {
+      case 'resolve_place_entity': {
+        const input=entityInput.parse(args);
+        let address;
+        if(input.token) address=await verifyAddress(input.token,env);
+        else {
+          const found=await searchAddresses(input.query!,1,env);
+          if(found.candidates.length!==1||found.total!==1) return structuredResult({status:found.candidates.length?'ambiguous':'not_found',needsChoice:found.candidates.length>0,note:found.candidates.length?'같은 검색어에 주소 후보가 여러 개 있습니다. 사용자가 고른 token으로 다시 조회하세요.':'공식 주소 후보를 찾지 못했습니다.',candidates:found.candidates.slice(0,10).map(c=>({roadAddr:c.roadAddr,jibunAddr:c.jibunAddr,bdNm:c.bdNm,token:c.token}))});
+          address=await verifyAddress(found.candidates[0].token,env);
+        }
+        return structuredResult({status:'confirmed',entity:await identifyPlace(address),address});
+      }
       case 'resolve_photo_location': {
         const input=locationInput.parse(args);
         if(input.latitude===undefined||input.longitude===undefined)return textResult({status:'needs_location',nextAction:'주소 입력 또는 위치 공유를 요청하세요.',note:'AI 앱에서 사진 GPS가 전달되지 않을 수 있습니다. 이미지 모습으로 위치를 추측하지 마세요.'});
@@ -132,13 +161,17 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
       case 'validate_place_answer': {
         const started=Date.now();const input=validationInput.parse(args);
         const address=await verifyAddress(input.token,env);
-        const story=getFullDocentStory(address.sggNm,address.emdNm);
+        const baseStory=getFullDocentStory(address.sggNm,address.emdNm);
+        const archive=await readArchiveDocentEvidence(env.DB,address.sggNm,address.emdNm);
+        const story=mergeArchiveDocentEvidence(baseStory,archive);
+        const entity=await identifyPlace(address);
+        const profile=await readPlaceProfile(address,entity,env);
         const question=input.question||story.dong+'의 시간을 안내해 주세요.';
         const scenes=pickScenes(story,question);
-        const checked=validateAnswer(input.answer,scenes);
-        await logClientDocent(env.DB,{event:'validation',ms:Date.now()-started,ok:checked.omitted===0,records:scenes.length,type:checked.questionType,kept:checked.paragraphs.length,omitted:checked.omitted});
+        const checked=validateAnswer(input.answer,scenes,profile.records);
+        await logClientDocent(env.DB,{event:'validation',ms:Date.now()-started,ok:checked.omitted===0,records:scenes.length+profile.records.length,type:checked.questionType,kept:checked.paragraphs.length,omitted:checked.omitted});
         const used=new Set(checked.paragraphs.flatMap(p=>p.evidenceIds));
-        return textResult({...checked,sources:scenes.filter(s=>used.has(s.id)).map(sceneSource),valid:checked.paragraphs.length>0&&checked.omitted===0,
+        return structuredResult({...checked,sources:[...scenes.filter(s=>used.has(s.id)).map(sceneSource),...profile.records.filter(r=>used.has(r.id)).map(r=>({id:r.id,date:r.observedAt,title:r.title,institution:r.source.institution,url:r.source.url,scope:r.scope}))],place:{entity,profileStatus:profile.status,matchStatus:profile.matchStatus},limitations:profile.limitations,valid:checked.paragraphs.length>0&&checked.omitted===0,
           verification:'mechanical_only',note:'근거 id·숫자·길이 검사입니다. 의미적 사실 일치와 장소 동일성은 별도로 확인해야 합니다.'});
       }
       case 'search_place': {
@@ -148,7 +181,11 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
       case 'get_place_history': {
         const input = historyInput.parse(args);
         const address = await verifyAddress(input.token, env);
-        const story = getDocentStory(address.sggNm, address.emdNm, [address.bdNm].filter(Boolean));
+        const baseStory = getDocentStory(address.sggNm, address.emdNm, [address.bdNm].filter(Boolean));
+        const archive=await readArchiveDocentEvidence(env.DB,address.sggNm,address.emdNm);
+        const story=mergeArchiveDocentEvidence(baseStory,archive);
+        const entity=await identifyPlace(address);
+        const profile=await readPlaceProfile(address,entity,env);
         const scenes = story.scenes.slice(input.offset, input.offset + input.limit).map(scene => ({
           id: scene.id,
           kind: scene.kind,
@@ -168,9 +205,10 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
           evidence: scene.evidence,
         }));
         const nextOffset = input.offset + scenes.length;
-        return textResult({
+        return structuredResult({
           address,
-          place: {records: [], status: 'unverified', note: '이 건물·부지와 직접 연결된 역사 기록은 아직 확인하지 못했습니다.'},
+          place: {entity,records:profile.records,status:profile.matchStatus,profileStatus:profile.status,sources:profile.sources,limitations:profile.limitations,note:profile.matchStatus==='confirmed'?'주소와 일치한 건축물대장 정보가 있습니다. 사용승인일을 최초 건립연도로 해석하지 마세요.':'건물 단위 식별이 확인되지 않은 기록은 필지 참고자료로 분류했습니다.'},
+          archive:{status:archive.status,reviewedRecords:archive.scenes.length,sources:archive.sources,limitations:archive.limitations},
           neighborhood: {
             district: story.district,
             dong: story.dong,
@@ -198,10 +236,14 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
           token = found.candidates[0].token;
         }
         const address = await verifyAddress(token, env);
-        const story = getFullDocentStory(address.sggNm, address.emdNm);
-        const packet=await generatePlaceAnswer({address,story,question:input.question,questionType:input.questionType});
-        await logClientDocent(env.DB,{event:'retrieval',ms:Date.now()-startedAt,ok:packet.status==='ready',records:packet.neighborhood.selected,type:input.questionType});
-        return textResult(packet);
+        const baseStory = getFullDocentStory(address.sggNm, address.emdNm);
+        const archive=await readArchiveDocentEvidence(env.DB,address.sggNm,address.emdNm);
+        const story=mergeArchiveDocentEvidence(baseStory,archive);
+        const entity=await identifyPlace(address);
+        const profile=await readPlaceProfile(address,entity,env);
+        const packet=await generatePlaceAnswer({address,story,question:input.question,questionType:input.questionType,entity,placeProfile:profile,archive});
+        await logClientDocent(env.DB,{event:'retrieval',ms:Date.now()-startedAt,ok:packet.status==='ready',records:packet.neighborhood.selected+profile.records.length,type:input.questionType});
+        return structuredResult(packet);
       }
       case 'get_answer_stats': {
         const input = z.object({days: z.number().int().min(1).max(365).default(30)}).strict().parse(args);

@@ -22,7 +22,10 @@ export function returnedRecords(result:McpToolResult):number {
   const value=JSON.parse(result.content[0]?.text||'{}');
   if(!isObject(value))return 0;
   const neighborhood=isObject(value.neighborhood)?value.neighborhood:{};
-  for(const records of [value.candidates,neighborhood.records,neighborhood.scenes,value.sources])if(Array.isArray(records))return records.length;
+  const place=isObject(value.place)?value.place:{};
+  if(Array.isArray(neighborhood.records))return neighborhood.records.length+(Array.isArray(place.records)?place.records.length:0);
+  if(Array.isArray(neighborhood.scenes))return neighborhood.scenes.length+(Array.isArray(place.records)?place.records.length:0);
+  for(const records of [value.candidates,value.sources])if(Array.isArray(records))return records.length;
  }catch { /* Non-JSON text is not a returned source record. */ }
  return 0;
 }

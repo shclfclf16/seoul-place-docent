@@ -2,10 +2,11 @@ export type McpTool = {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
   annotations?: Record<string, boolean>;
 };
 export type McpContent = {type: 'text'; text: string};
-export type McpToolResult = {content: McpContent[]; isError?: boolean; errorType?:string; _meta?:Record<string,unknown>};
+export type McpToolResult = {content: McpContent[]; structuredContent?:Record<string,unknown>; isError?: boolean; errorType?:string; _meta?:Record<string,unknown>};
 type Execute = (name: string, args: Record<string, unknown>) => Promise<McpToolResult>;
 
 export const MCP_VERSION = '2026-07-28';
@@ -19,6 +20,10 @@ export function rpcError(id: string | number | null, code: number, message: stri
 }
 export function textResult(value: unknown): McpToolResult {
   return {content: [{type: 'text', text: JSON.stringify(value)}]};
+}
+/** Structured output for capable MCP clients, with JSON text retained for older clients. */
+export function structuredResult(value: Record<string, unknown>): McpToolResult {
+  return {structuredContent: value, content: [{type: 'text', text: JSON.stringify(value)}]};
 }
 
 /** Public, stateless evidence tools; admin data uses a separate authenticated API. */
@@ -41,7 +46,7 @@ export async function handleMcpMessage(value: unknown, tools: readonly McpTool[]
       result = {
         supportedVersions: MCP_SUPPORTED_VERSIONS,
         _meta: {'io.modelcontextprotocol/serverInfo': {name: 'seoul-place-docent', version: '2.0.0'}},
-        instructions: 'search_place로 주소 후보를 조회하고 복수 후보는 사용자가 선택하게 하세요. prepare_place_answer로 근거를 받은 뒤 호출한 AI가 출처와 시기를 붙여 최종 해설을 작성하세요. 같은 token·question으로 validate_place_answer를 호출할 수 있습니다. 건물과 동네 역사를 구분하고 미확인 사항을 표시하세요. 서버는 모델 API를 호출하지 않습니다.',
+        instructions: 'search_place로 주소 후보를 조회하고 복수 후보는 사용자가 선택하게 하세요. resolve_place_entity로 공식 장소 ID를 확인하고 prepare_place_answer로 건축물대장과 동네 역사 근거를 함께 받으세요. 호출한 AI가 출처와 시기를 붙여 최종 해설을 작성하고, 같은 token·question으로 validate_place_answer를 호출할 수 있습니다. 건물·필지·동네 범위를 구분하고 사용승인일을 건립연도로 바꾸지 마세요. 서버는 모델 API를 호출하지 않습니다.',
         capabilities: {tools: {}},
         serverInfo: {name: 'seoul-place-docent', version: '2.0.0'},
       };
@@ -52,7 +57,7 @@ export async function handleMcpMessage(value: unknown, tools: readonly McpTool[]
       const negotiated = MCP_SUPPORTED_VERSIONS.includes(params.protocolVersion) ? params.protocolVersion : MCP_LEGACY_VERSIONS[0];
       result = {
         protocolVersion: negotiated,
-        instructions: '주소 또는 실제 GPS를 확인한 다음 prepare_place_answer로 근거를 조회하세요. 질문 분류와 최종 도슨트 작성은 호출한 AI가 수행합니다. 서버는 모델 API를 호출하지 않습니다.',
+        instructions: '주소 또는 실제 GPS를 확인한 다음 resolve_place_entity와 prepare_place_answer로 장소 ID 및 건축·역사 근거를 조회하세요. 질문 분류와 최종 도슨트 작성은 호출한 AI가 수행합니다. 서버는 모델 API를 호출하지 않습니다.',
         capabilities: {tools: {}},
         serverInfo: {name: 'seoul-place-docent', version: '2.0.0'},
       };
