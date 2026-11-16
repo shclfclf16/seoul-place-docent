@@ -33,6 +33,20 @@ test('no evidence returns honest no_records, never a fabricated story',()=>{
  assert.equal(p.status,'no_records');assert.deepEqual(p.neighborhood.records,[]);
  assert.equal(p.classification.questionType,null);
 });
+test('building-profile evidence is structured and validated without turning approval date into a construction year',()=>{
+ const building={id:'building:registry-1',subjectId:'place:123',title:'세림아파트',claim:'주용도: 공동주택 · 사용승인일: 19860620',scope:'building',spatialMatch:'exact',verification:'source_verified',observedAt:'2026-11-17T00:00:00.000Z',source:{id:'building-register',institution:'국토교통부 건축물대장',url:'https://www.data.go.kr/data/15134735/openapi.do'},values:{건물명:'세림아파트',주용도:'공동주택',사용승인일:'19860620'}};
+ const entity={placeId:'place:123',name:'세림아파트',address:'서울특별시 성동구 마장로42길 16',lotAddress:'서울특별시 성동구 마장동 784-0',entityType:'building',matchStatus:'confirmed',identityBasis:'official_building_management_number',source:{institution:'주소기반산업지원서비스',url:'https://business.juso.go.kr/'}};
+ const profile={status:'confirmed',matchStatus:'confirmed',records:[building],sources:[{id:'building-register',institution:'국토교통부 건축물대장',url:building.source.url,retrievedAt:building.observedAt}],limitations:[]};
+ const packet=preparePlaceAnswer({address,story:{...story,scenes:[]},entity,placeProfile:profile});
+ assert.equal(packet.status,'ready');assert.equal(packet.place.records[0].id,building.id);assert.equal(packet.facts[0].scope,'building');
+ const checked=validateAnswer({question_type:'특정 장소·건물',paragraphs:[{heading:'건축물대장',text:'세림아파트의 사용승인일은 1986년입니다.',evidence_ids:[building.id]}],held:[]},[],[building]);
+ assert.equal(checked.omitted,0);assert.equal(checked.paragraphs[0].scope,'건물');
+ const overclaim=validateAnswer({question_type:'특정 장소·건물',paragraphs:[{heading:'건립 시기',text:'세림아파트는 1986년에 건립되었습니다.',evidence_ids:[building.id]}],held:[]},[],[building]);
+ assert.equal(overclaim.omitted,1);assert.equal(overclaim.paragraphs.length,0);
+ const parcel={...building,id:'parcel-building:registry-1',scope:'parcel'};
+ const parcelOverclaim=validateAnswer({question_type:'특정 장소·건물',paragraphs:[{heading:'건물',text:'이 건물은 1986년에 건립되었습니다.',evidence_ids:[parcel.id]}],held:[]},[],[parcel]);
+ assert.equal(parcelOverclaim.omitted,1);
+});
 test('unknown citations including mixed known/unknown, unsupported numbers and long scenes are rejected',()=>{
  const scenes=pickScenes(story,'지하도',4),id=scenes.find(s=>/지하도/.test(s.title)).id;
  const row=(text,evidence_ids)=>({heading:'지하도',text,evidence_ids});
@@ -66,7 +80,7 @@ test('metrics failure does not block evidence retrieval',async()=>{
 test('MCP module has no model-provider capability or answer cache reuse',()=>{
  const source=readFileSync(new URL('../lib/place-answer.ts',import.meta.url),'utf8');
  for(const forbidden of ['openaiFetch','api.openai.com','OPENAI_API_KEY','place_answer_cache'])assert.equal(source.includes(forbidden),false,forbidden);
- for(const rule of ['장소와 동네를 구분','1~3문장','held','evidence_ids'])assert.ok(DOCENT_RULES.includes(rule));
+ for(const rule of ['건물·필지 기록과 동네 기록의 범위를 구분','1~3문장','held','evidence_ids'])assert.ok(DOCENT_RULES.includes(rule));
 });
 
 test('address wording still prioritizes Hanseong place records without upgrading their scope',()=>{

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {handleMcpMessage, MCP_VERSION, MCP_SUPPORTED_VERSIONS, textResult} from '../lib/mcp-protocol.ts';
+import {handleMcpMessage, MCP_VERSION, MCP_SUPPORTED_VERSIONS, structuredResult, textResult} from '../lib/mcp-protocol.ts';
 
 const tools = [{name: 'read_records', description: 'Read records', inputSchema: {type: 'object'}}];
 const call = (method, params = {}, id = 1) => ({jsonrpc: '2.0', id, method, params});
@@ -18,6 +18,10 @@ test('tools are discoverable and calls return MCP content blocks', async () => {
   const response = await handleMcpMessage(call('tools/call', {name: 'read_records', arguments: {offset: 6}}, 'request-2'), tools, execute);
   assert.equal(response.id, 'request-2');
   assert.deepEqual(JSON.parse(response.result.content[0].text), {offset: 6});
+});
+test('structured output remains available alongside legacy JSON text',async()=>{
+ const value={place:{placeId:'place:test'},status:'confirmed'};
+ const result=structuredResult(value);assert.deepEqual(result.structuredContent,value);assert.deepEqual(JSON.parse(result.content[0].text),value);
 });
 test('invalid envelopes and unknown methods return JSON-RPC errors', async () => {
   for (const input of [null, [], 'text', {jsonrpc: '1.0', id: 1, method: 'tools/list'}, call('tools/list', {}, {})]) {

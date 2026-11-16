@@ -19,7 +19,7 @@ test('HTTP initialize/list, notifications, parse errors and stateless methods',a
  const r=await POST(request(envelope('initialize',{protocolVersion:'2025-11-25'})));
  assert.equal(r.status,200);assert.match(r.headers.get('content-type'),/application\/json/);assert.equal(r.headers.has('mcp-session-id'),false);
  assert.equal((await r.json()).result.protocolVersion,'2025-11-25');
- assert.equal((await (await POST(request(envelope('tools/list')))).json()).result.tools.length,9);
+ const toolList=(await (await POST(request(envelope('tools/list')))).json()).result.tools;assert.equal(toolList.length,10);assert.ok(toolList.find(tool=>tool.name==='prepare_place_answer').outputSchema);assert.ok(toolList.some(tool=>tool.name==='extract_photo_location'));assert.ok(toolList.some(tool=>tool.name==='resolve_place_entity'));
  const n=await POST(request({jsonrpc:'2.0',method:'notifications/initialized'}));assert.equal(n.status,202);assert.equal(await n.text(),'');
  assert.equal((await POST(new Request('https://docent.test/mcp',{method:'POST',headers,body:'{'}))).status,400);
  for(const handler of [GET,DELETE])assert.equal(handler(new Request('https://docent.test/mcp')).status,405);
@@ -47,7 +47,7 @@ test('transport rejects origins, media types, oversized streams and invalid mode
  assert.equal((await POST(request(call,meta))).status,200);
  const limit=createMcpLimiter(2,1000);assert.equal(limit(1000),true);assert.equal(limit(1001),true);assert.equal(limit(1002),false);assert.equal(limit(2000),true);
 });
-test('all eight actual MCP tools run without operator model calls; address and GPS edge cases',async()=>{
+test('all actual MCP tools run without operator model calls; address and GPS edge cases',async()=>{
  const original=globalThis.fetch;const saved={...process.env};const info=console.info;console.info=()=>{};
  process.env.JUSO_API_KEY='fixture-only';process.env.OPENAI_API_KEY='must-never-be-used';
  delete process.env.CLOUDFLARE_ACCOUNT_ID;
@@ -57,7 +57,8 @@ test('all eight actual MCP tools run without operator model calls; address and G
  try{
   const search=await invoke('search_place',{query:'사직로 161'});const token=data(search).candidates[0].token;
   assert.ok(search._meta.requestId);assert.equal(search._meta.auditPersisted,false);
-  const packet=data(await invoke('prepare_place_answer',{token}));assert.equal(packet.generation.serverAiCalls,0);assert.ok(packet.neighborhood.records.length>0);
+  const resolver=await invoke('resolve_place_entity',{token});assert.ok(resolver.structuredContent.entity.placeId);assert.equal(resolver.structuredContent.entity.matchStatus,'confirmed');const byQuery=await invoke('resolve_place_entity',{query:address.roadAddr});assert.equal(byQuery.structuredContent.entity.placeId,resolver.structuredContent.entity.placeId);
+  const packetResult=await invoke('prepare_place_answer',{token});const packet=data(packetResult);assert.ok(packetResult.structuredContent);assert.equal(packet.generation.serverAiCalls,0);assert.ok(packet.neighborhood.records.length>0);assert.equal(packet.place.entity.placeId,resolver.structuredContent.entity.placeId);
   assert.deepEqual(data(await invoke('generate_place_answer',{token})).neighborhood,packet.neighborhood);
   assert.ok(data(await invoke('get_place_history',{token})).neighborhood.scenes.length>0);
   const record=packet.neighborhood.records[0];
@@ -69,7 +70,7 @@ test('all eight actual MCP tools run without operator model calls; address and G
   assert.equal((await invoke('prepare_place_answer',{token:'forged'})).isError,true);
   assert.equal((await invoke('get_archive_stats')).isError,true);
   assert.equal(data(await invoke('get_answer_stats')).available,false);
-  candidates=[address,address];assert.equal(data(await invoke('prepare_place_answer',{address:address.roadAddr})).needsChoice,true);
+  candidates=[address,address];assert.equal(data(await invoke('prepare_place_answer',{address:address.roadAddr})).needsChoice,true);assert.equal((await invoke('resolve_place_entity',{query:address.roadAddr})).structuredContent.status,'ambiguous');
   candidates=[];assert.equal(data(await invoke('search_place',{query:'없는주소'})).candidates.length,0);
   candidates=[{...address,siNm:'부산광역시',admCd:'2629010100'}];assert.equal(data(await invoke('search_place',{query:'부산주소'})).candidates.length,0);
   const outside=await signAddress(candidates[0],'fixture-only');assert.equal((await invoke('prepare_place_answer',{token:outside})).isError,true);
