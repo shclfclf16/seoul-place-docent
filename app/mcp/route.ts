@@ -1,5 +1,6 @@
 import {env} from '@/lib/runtime-env';
 import {addBigQueryEvidence} from '@/lib/bigquery/docent';
+import {paginateHistoryScenes} from '@/lib/mcp-history-pagination';
 import {z} from 'zod';
 import {archiveStats, database} from '@/lib/archive-db';
 import {getDocentStory, getFullDocentStory} from '@/lib/docent-data';
@@ -170,8 +171,8 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
         const address = await verifyAddress(input.token, env);
         const baseStory = getDocentStory(address.sggNm, address.emdNm, [address.bdNm].filter(Boolean));
         const {story,bigQueryStatus,placeRecords} = await addBigQueryEvidence(baseStory,address);
-        const neighborhoodScenes=story.scenes.filter(scene=>scene.placeRelation!=='EXACT_SITE');
-        const scenes = neighborhoodScenes.slice(input.offset, input.offset + input.limit).map(scene => ({
+        const historyPage=paginateHistoryScenes(story.scenes,input.offset,input.limit);
+        const scenes = historyPage.scenes.map(scene => ({
           id: scene.id,
           kind: scene.kind,
           date: scene.date,
@@ -190,7 +191,6 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
           evidence: scene.evidence,
           placeRelation:scene.placeRelation,
         }));
-        const nextOffset = input.offset + scenes.length;
         return textResult({
           address,
           place: {records:placeRecords.filter(record=>record.relation_type==='EXACT_SITE').map(record=>({id:`bq:${record.record_id}`,title:record.record_title,recordType:record.record_type,period:record.subject_start_year===null?'시기 미상':`${record.subject_start_year}년`,institution:record.source_institution,url:record.source_url,rightsStatus:record.rights_status,reviewStatus:record.review_status})), status: placeRecords.some(record=>record.relation_type==='EXACT_SITE')?'verified':'unverified', note: placeRecords.some(record=>record.relation_type==='EXACT_SITE')?'선택한 주소의 건축물관리번호 또는 도로명·지번주소와 장소 카탈로그가 일치한 공개 승인 자료입니다.':'이 주소와 직접 일치하는 공개 승인 자료를 찾지 못했습니다.'},
@@ -198,10 +198,10 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
             district: story.district,
             dong: story.dong,
             scenes,
-            total: neighborhoodScenes.length,
-            offset: input.offset,
-            nextOffset: nextOffset < neighborhoodScenes.length ? nextOffset : null,
-            sceneCount: neighborhoodScenes.length,
+            total: historyPage.total,
+            offset: historyPage.offset,
+            nextOffset: historyPage.nextOffset,
+            sceneCount: historyPage.sceneCount,
             photoRecords: story.photoRecords,
             photoGroups: story.photoGroups,
             unpictured: story.unpictured,
