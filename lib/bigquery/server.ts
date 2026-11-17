@@ -3,6 +3,7 @@ import type {Address} from '@/lib/providers';
 import {coordinates} from '@/lib/providers';
 import {env} from '@/lib/runtime-env';
 import {BigQueryAuthError, readHistoricalRecords} from './records';
+import {readBigQueryCatalogDiagnostics} from './catalog-diagnostics';
 import {readVerifiedPlaceRecords, placeRecordsAsScenes} from './place-records';
 
 const scopes = ['https://www.googleapis.com/auth/cloud-platform'];
@@ -91,6 +92,11 @@ export async function exchangeVercelCredentials(
 /** Node server only. Future evidence consumers can use the same result contract. */
 export function getBigQueryHistoricalRecords() {
   return readHistoricalRecords(process.env, {getToken: accessToken});
+}
+
+/** Admin-only route uses this read-only count diagnostic; it does not enable public place search. */
+export function getBigQueryCatalogDiagnostics() {
+  return readBigQueryCatalogDiagnostics(process.env, {getToken: accessToken});
 }
 
 /** Public evidence search: rows are filtered by review and reuse status before leaving BigQuery. */

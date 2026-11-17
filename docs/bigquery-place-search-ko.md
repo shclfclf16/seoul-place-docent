@@ -87,6 +87,19 @@ SELECT COUNT(*) AS link_count FROM `seoul-place-docent-514906.seoul_history.reco
 SELECT COUNT(*) AS test_record_count FROM `seoul-place-docent-514906.seoul_history.historical_records_test`;
 ```
 
+### 관리자 전용 읽기 진단 API
+
+Preview에서 세 신규 테이블의 실제 건수만 확인하려면 다음 주소를 호출합니다. API는 기존 `ARCHIVE_ADMIN_TOKEN`을 `x-archive-admin` 헤더로 요구하며, 인증되지 않은 요청에는 자료나 건수를 반환하지 않습니다. 응답에는 테이블 행 수와 기대 건수(7·3·7) 일치 여부만 들어갑니다. 조회는 BigQuery dry run과 `BIGQUERY_MAX_BYTES_BILLED` 한도를 적용하고, 공개 자료 검색 플래그 `BIGQUERY_PLACE_SEARCH_ENABLED=false`를 바꾸지 않습니다.
+
+PowerShell에서 `ARCHIVE_ADMIN_TOKEN`을 현재 세션 환경변수로 준비한 뒤 실행합니다. 실제 키를 명령 기록·문서·저장소에 붙여 넣지 마세요.
+
+```powershell
+$headers = @{ 'x-archive-admin' = $env:ARCHIVE_ADMIN_TOKEN }
+Invoke-RestMethod -Uri 'https://<Preview 주소>/api/admin/bigquery-catalog' -Headers $headers
+```
+
+예상 응답은 `status: "ok"`, `historical_records: 7`, `places: 3`, `record_place_links: 7`, `allMatchExpected: true`입니다. 건수가 다르면 `allMatchExpected`가 `false`로 표시됩니다. 인증 실패는 HTTP 403, 설정·BigQuery 조회 실패는 HTTP 503이며, 오류 본문에 토큰이나 원문 자료를 포함하지 않습니다. 이 API는 데이터를 추가·수정하지 않고, 검토 대기 자료를 승인하거나 공개하지 않습니다.
+
 ## 웹사이트와 MCP 설정
 
 Vercel의 **Preview** 프로젝트 환경변수에 기존 BigQuery OIDC 설정(자세한 발급·WIF 항목은 [BigQuery 연결 안내](bigquery-integration.md))과 다음 값을 추가합니다. 값을 Production에 복사하지 말고 Preview에서 먼저 확인하세요.
