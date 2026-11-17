@@ -152,7 +152,7 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
         const started=Date.now();const input=validationInput.parse(args);
         const address=await verifyAddress(input.token,env);
         const baseStory=getFullDocentStory(address.sggNm,address.emdNm);
-        const {story,bigQueryStatus}=await addBigQueryEvidence(baseStory);
+        const {story,bigQueryStatus}=await addBigQueryEvidence(baseStory,address);
         const question=input.question||story.dong+'의 시간을 안내해 주세요.';
         const scenes=pickScenes(story,question,14,address.bdNm);
         const checked=validateAnswer(input.answer,scenes);
@@ -169,8 +169,9 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
         const input = historyInput.parse(args);
         const address = await verifyAddress(input.token, env);
         const baseStory = getDocentStory(address.sggNm, address.emdNm, [address.bdNm].filter(Boolean));
-        const {story,bigQueryStatus} = await addBigQueryEvidence(baseStory);
-        const scenes = story.scenes.slice(input.offset, input.offset + input.limit).map(scene => ({
+        const {story,bigQueryStatus,placeRecords} = await addBigQueryEvidence(baseStory,address);
+        const neighborhoodScenes=story.scenes.filter(scene=>scene.placeRelation!=='EXACT_SITE');
+        const scenes = neighborhoodScenes.slice(input.offset, input.offset + input.limit).map(scene => ({
           id: scene.id,
           kind: scene.kind,
           date: scene.date,
@@ -187,19 +188,20 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
             note: '이미지 이용조건과 장소 관계는 제공기관 원문을 확인해 주세요.',
           })),
           evidence: scene.evidence,
+          placeRelation:scene.placeRelation,
         }));
         const nextOffset = input.offset + scenes.length;
         return textResult({
           address,
-          place: {records: [], status: 'unverified', note: '이 건물·부지와 직접 연결된 역사 기록은 아직 확인하지 못했습니다.'},
+          place: {records:placeRecords.filter(record=>record.relation_type==='EXACT_SITE').map(record=>({id:`bq:${record.record_id}`,title:record.record_title,recordType:record.record_type,period:record.subject_start_year===null?'시기 미상':`${record.subject_start_year}년`,institution:record.source_institution,url:record.source_url,rightsStatus:record.rights_status,reviewStatus:record.review_status})), status: placeRecords.some(record=>record.relation_type==='EXACT_SITE')?'verified':'unverified', note: placeRecords.some(record=>record.relation_type==='EXACT_SITE')?'선택한 주소의 건축물관리번호 또는 도로명·지번주소와 장소 카탈로그가 일치한 공개 승인 자료입니다.':'이 주소와 직접 일치하는 공개 승인 자료를 찾지 못했습니다.'},
           neighborhood: {
             district: story.district,
             dong: story.dong,
             scenes,
-            total: story.total,
+            total: neighborhoodScenes.length,
             offset: input.offset,
-            nextOffset: nextOffset < story.scenes.length ? nextOffset : null,
-            sceneCount: story.scenes.length,
+            nextOffset: nextOffset < neighborhoodScenes.length ? nextOffset : null,
+            sceneCount: neighborhoodScenes.length,
             photoRecords: story.photoRecords,
             photoGroups: story.photoGroups,
             unpictured: story.unpictured,
@@ -221,7 +223,7 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
         }
         const address = await verifyAddress(token, env);
         const baseStory = getFullDocentStory(address.sggNm, address.emdNm);
-        const {story,bigQueryStatus} = await addBigQueryEvidence(baseStory);
+        const {story,bigQueryStatus} = await addBigQueryEvidence(baseStory,address);
         const packet=await generatePlaceAnswer({address,story,question:input.question,questionType:input.questionType});
         await logClientDocent(env.DB,{event:'retrieval',ms:Date.now()-startedAt,ok:packet.status==='ready',records:packet.neighborhood.selected,type:input.questionType});
         const videos=await getDocentVideoCandidates(address.sggNm,address.emdNm);

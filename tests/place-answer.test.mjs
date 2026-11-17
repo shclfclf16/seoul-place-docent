@@ -45,6 +45,19 @@ test('unknown citations including mixed known/unknown, unsupported numbers and l
  assert.equal(result.paragraphs.length,1);assert.equal(result.omitted,3);
  assert.deepEqual(result.held,['건물 자체의 역사']);
 });
+test('answer validation keeps exact-site and nearby evidence in separate paragraphs',()=>{
+ const [base]=pickScenes(story,'세종로',1);
+ const exact={...base,id:'exact-record',placeRelation:'EXACT_SITE',scope:'place'};
+ const nearby={...base,id:'nearby-record',placeRelation:'NEARBY',scope:'dong'};
+ const sceneList=[exact,nearby];
+ const checked=validateAnswer({question_type:'특정 장소·건물',paragraphs:[
+  {heading:'장소',text:'확인된 기록이에요.',evidence_ids:['exact-record']},
+  {heading:'인접 장소',text:'관련된 기록이에요.',evidence_ids:['nearby-record']},
+  {heading:'혼합',text:'관련된 기록이에요.',evidence_ids:['exact-record','nearby-record']}
+ ],held:[]},sceneList);
+ assert.deepEqual(checked.paragraphs.map(p=>p.scope),['장소','인접 장소']);
+ assert.equal(checked.omitted,1);
+});
 test('KPI separates retrieval from validation and never invents client completion or token usage',async()=>{
  const db=fakeD1();
  for(const ms of [100,200,300,400,500])await logClientDocent(db,{event:'retrieval',ms,ok:true,records:3});

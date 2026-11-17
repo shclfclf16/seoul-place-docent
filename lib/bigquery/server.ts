@@ -1,4 +1,7 @@
 import type {GoogleAuth} from 'google-auth-library';
+import type {Address} from '@/lib/providers';
+import {coordinates} from '@/lib/providers';
+import {env} from '@/lib/runtime-env';
 import {BigQueryAuthError, readHistoricalRecords} from './records';
 import {readVerifiedPlaceRecords, placeRecordsAsScenes} from './place-records';
 
@@ -91,7 +94,10 @@ export function getBigQueryHistoricalRecords() {
 }
 
 /** Public evidence search: rows are filtered by review and reuse status before leaving BigQuery. */
-export async function getBigQueryPlaceHistory(district:string,dong:string) {
-  const result=await readVerifiedPlaceRecords(process.env,{district,dong},{getToken:accessToken});
-  return {status:result.status,scenes:result.status==='ok'?placeRecordsAsScenes(result.records):[],...(result.status==='ok'?{location:result.location}:{})};
+export async function getBigQueryPlaceHistory(address:Address) {
+  if(process.env.BIGQUERY_PLACE_SEARCH_ENABLED!=='true')return {status:'disabled' as const,records:[],scenes:[]};
+  let point:{x:number;y:number}|undefined;
+  try{const found=await coordinates(address,env);if(found.status==='verified'&&typeof found.x==='number'&&typeof found.y==='number')point={x:found.x,y:found.y};}catch{/* Exact address matching still works without a verified nearby coordinate. */}
+  const result=await readVerifiedPlaceRecords(process.env,{address,point},{getToken:accessToken});
+  return {status:result.status,records:result.status==='ok'?result.records:[],scenes:result.status==='ok'?placeRecordsAsScenes(result.records):[],...(result.status==='ok'?{location:result.location}:{})};
 }

@@ -15,16 +15,24 @@
 - 장소 관계가 `EXACT_SITE`, `NEARBY`, `DISTRICT_CONTEXT` 중 하나
 - 원문 URL이 HTTPS
 
-이 필터를 통과해도 `EXACT_SITE`는 자료와 카탈로그 장소의 관계를 나타냅니다. 사용자가 입력한 건물·필지와 같다는 뜻은 아닙니다. 화면과 MCP 응답은 관계 범위를 따로 표시하고, 주소가 같다는 이유만으로 건물을 동일시하지 않습니다. 사진과 영상 파일을 새로 내려받거나 대체 이미지로 만들지 않습니다.
+장소 관계는 선택된 서명 주소와 다시 대조합니다. `EXACT_SITE`는 건축물관리번호 또는 도로명/지번 주소가 카탈로그 장소와 일치할 때만 해당 장소 탭으로 보냅니다. 동 이름만 같으면 직접 일치 자료에서 제외합니다. `NEARBY`는 검토된 WGS84 좌표가 있고 주소 API로 확인된 주소 좌표에서 직선거리 500m 이내일 때만 인접 장소로 표시합니다. `DISTRICT_CONTEXT`는 법정동 또는 자치구 배경으로 별도 표시합니다. 사진·영상 자료는 자료 유형, 제목, 연도, 제공기관, 원문 링크를 기록 카드에 표시합니다. 현재 카탈로그에는 별도 이미지 파일 URL이나 검증된 재생 구간 열이 없으므로, 실제 미리보기나 영상 재생은 기존 사진·영상 자료 기능이 연결된 경우에만 제공하고 여기서 새로 만들어 내지 않습니다.
 
 ## 테이블 구조
 
 `bigquery/schema.sql`은 다음 새 테이블을 `CREATE TABLE IF NOT EXISTS`로 준비합니다. 기존 네 열짜리 `historical_records_test`는 사용하거나 수정하지 않습니다.
 
 - `historical_records`: 자료·기관·원문·시기·권리·검토·중복 메타데이터와 출처 원본 payload
-- `places`: 장소명·주소·자치구·법정동·법정동 코드·WGS84 좌표(있을 때만)·역사 지명·위치 검토 상태
+- `places`: 장소명·도로명/지번 주소·건축물관리번호·자치구·법정동·법정동 코드·WGS84 좌표(있을 때만)·역사 지명·위치 검토 상태
 - `record_place_links`: 자료와 장소의 관계 유형·연결 근거·관계 검토 상태
 - `ingestion_runs`, `ingestion_run_sources`: 가져오기 작업 이력과 파일별 진행 상태
+
+기존 `places.csv`의 기본 열을 유지하면서 필요할 때 다음 열을 선택적으로 추가할 수 있습니다. 비어 있는 값은 빈 자료로 처리하며 추측해서 채우지 않습니다.
+
+```text
+road_address,jibun_address,building_name,building_management_number,latitude,longitude,coordinate_system
+```
+
+직접 일치 판정은 `building_management_number` 또는 완전한 도로명/지번 주소의 일치가 필요합니다. 주변 자료 판정은 `latitude`, `longitude`와 `coordinate_system=EPSG:4326`가 모두 있고 위치 검토가 승인되어야 합니다. 좌표는 위도/경도를 함께 넣어야 하며 위도 -90~90, 경도 -180~180 범위를 검사합니다. 단일 좌표만 입력하면 적재 검증이 거부합니다.
 
 BigQuery는 외래키를 강제로 검사하지 않습니다. 적재 스크립트가 자료 ID/장소 ID 참조, 중복 ID와 URL, 열 값, 상태를 먼저 검사합니다. 사용자가 입력한 검색어는 SQL에 이어 붙이지 않고 BigQuery 매개변수로 전달합니다. 조회 전 dry run으로 읽을 바이트를 확인하며 `BIGQUERY_MAX_BYTES_BILLED`, `BIGQUERY_MAX_ROWS`, 시간 제한을 적용합니다.
 
@@ -77,7 +85,7 @@ BIGQUERY_MAX_ROWS=25
 
 테이블 생성 후, 검토 완료한 자료가 실제로 새 테이블에 있고 Preview OIDC 주체에 BigQuery 작업 실행 및 데이터셋 읽기 권한이 있을 때만 `BIGQUERY_PLACE_SEARCH_ENABLED=true`로 바꿉니다. `historical_records_test`만 있을 때 기능을 켜면 새 테이블이 없어 조회가 실패하지만 웹사이트와 MCP는 기존 D1/JSON 결과로 계속 작동합니다.
 
-`/api/docent`는 기존 동네 이야기와 사진을 우선 구성한 뒤 승인된 BigQuery 자료가 있을 때만 추가합니다. `search_place` → 선택한 주소의 token → `get_place_history` 또는 `prepare_place_answer` 흐름에서도 같은 근거 필터를 사용합니다. `validate_place_answer`는 같은 token·질문의 근거 묶음에 BigQuery 장면이 포함되면 그 ID를 검사합니다. 관리자 API와 `ARCHIVE_ADMIN_TOKEN`은 MCP에 전달하지 않습니다.
+홈페이지는 POST 본문으로 주소 서명 token을 `/api/docent`에 보냅니다. 서버가 token을 다시 검증해 법정동·건축물관리번호를 얻고, 서버에서 확인한 주소 좌표가 있을 때만 인접 장소 반경을 계산합니다. `search_place` → 선택한 주소의 token → `get_place_history` 또는 `prepare_place_answer` 흐름에서도 같은 근거 필터를 사용합니다. `get_place_history`는 직접 일치 자료를 `place.records`에, 동네·인접·자치구 자료를 각각 구분해 반환합니다. `validate_place_answer`는 같은 token·질문의 근거 묶음에 BigQuery 장면이 포함되면 그 ID와 장소 범위를 검사하며, 서로 다른 장소 관계를 한 문단에서 섞으면 해당 문단을 제외합니다. 관리자 API와 `ARCHIVE_ADMIN_TOKEN`은 MCP에 전달하지 않습니다.
 
 현재 공개 MCP 빌드는 Node.js 기반 Vercel Build Output이라 기존 Vercel OIDC 인증을 재사용할 수 있습니다. Cloudflare Workers용 BigQuery 클라이언트는 별도로 제공되지 않으며 `server.cloudflare.ts`는 BigQuery 검색을 비활성으로 처리합니다. Preview 홈페이지 성공만으로 Cloudflare/별도 MCP의 BigQuery 성공으로 간주하지 마세요. 배포 환경별 `/health`와 실제 MCP 도구 호출을 따로 확인해야 합니다.
 

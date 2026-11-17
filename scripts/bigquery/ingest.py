@@ -32,7 +32,7 @@ RECORD_FIELDS = [
     "checked_date", "duplicate_status", "record_origin",
 ]
 PLACE_FIELDS = ["place_id", "place_name", "current_address", "district", "legal_dong", "legal_dong_code", "historical_names", "historical_period", "location_review_status", "notes"]
-PLACE_OPTIONAL_FIELDS = ["latitude", "longitude", "coordinate_system"]
+PLACE_OPTIONAL_FIELDS = ["road_address", "jibun_address", "building_name", "building_management_number", "latitude", "longitude", "coordinate_system"]
 LINK_FIELDS = ["record_id", "place_id", "relation_type", "relation_evidence", "link_review_status"]
 DATE_FIELDS = {"published_date", "checked_date"}
 YEAR_FIELDS = {"created_year", "subject_start_year", "subject_end_year"}
@@ -163,7 +163,7 @@ def validate_catalog():
         if not clean(row.get("place_name")) or not clean(row.get("location_review_status")): reasons.append("MISSING_REQUIRED_PLACE_FIELD")
         cooked = dict(row)
         for field in PLACE_OPTIONAL_FIELDS: cooked.setdefault(field, "")
-        lat, lon, coordinate_system = (clean(cooked.get(key)) for key in PLACE_OPTIONAL_FIELDS)
+        lat, lon, coordinate_system = (clean(cooked.get(key)) for key in ("latitude", "longitude", "coordinate_system"))
         if bool(lat) != bool(lon): reasons.append("INCOMPLETE_COORDINATE_PAIR")
         elif lat and lon:
             try:
@@ -258,6 +258,7 @@ def schemas():
             bigquery.SchemaField("content_hash", "STRING", mode="REQUIRED"), bigquery.SchemaField("ingestion_run_id", "STRING", mode="REQUIRED"),
         ],
         "places": [bigquery.SchemaField(name, "STRING", mode="REQUIRED" if name in {"place_id", "place_name", "location_review_status"} else "NULLABLE") for name in PLACE_FIELDS] + [
+            bigquery.SchemaField("road_address", "STRING"), bigquery.SchemaField("jibun_address", "STRING"), bigquery.SchemaField("building_name", "STRING"), bigquery.SchemaField("building_management_number", "STRING"),
             bigquery.SchemaField("latitude", "FLOAT64"), bigquery.SchemaField("longitude", "FLOAT64"), bigquery.SchemaField("coordinate_system", "STRING"),
             bigquery.SchemaField("source_payload", "JSON", mode="REQUIRED"),
             bigquery.SchemaField("updated_at", "TIMESTAMP", mode="REQUIRED"), bigquery.SchemaField("content_hash", "STRING", mode="REQUIRED"), bigquery.SchemaField("ingestion_run_id", "STRING", mode="REQUIRED")],
