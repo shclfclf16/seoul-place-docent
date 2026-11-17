@@ -76,7 +76,8 @@ class BigQueryIngestTests(unittest.TestCase):
         staged = ingest.stage_rows(data, "run-1", "2026-11-16T00:00:00+00:00")
         payload = staged["historical_records"][0]["source_payload"]
         self.assertEqual(payload["subject_end_year"], "")
-        self.assertNotIn("verified", json.dumps(payload, ensure_ascii=False).lower())
+        self.assertEqual(payload["review_status"], "NEEDS_REVIEW")
+        self.assertEqual(payload["duplicate_status"], "UNVERIFIED")
 
     def test_duplicate_ids_urls_unknown_references_and_invalid_values_are_rejected(self):
         rows = [
