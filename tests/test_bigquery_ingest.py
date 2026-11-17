@@ -226,7 +226,7 @@ class BigQueryIngestTests(unittest.TestCase):
     def test_place_coordinates_are_optional_but_pair_and_coordinate_system_are_validated(self):
         places_path = self.files["places"][0]
         self.write(places_path, ingest.PLACE_FIELDS + ingest.PLACE_OPTIONAL_FIELDS, [{
-            "place_id":"P-1", "place_name":"검토 장소", "current_address":"", "district":"마포구", "legal_dong":"당인동",
+            "place_id":"PLACE-1", "place_name":"검토 장소", "current_address":"", "district":"마포구", "legal_dong":"당인동",
             "legal_dong_code":"", "historical_names":"", "historical_period":"", "location_review_status":"UNVERIFIED",
             "notes":"", "latitude":"37.55", "longitude":"126.91", "coordinate_system":"EPSG:4326",
         }])
@@ -235,7 +235,7 @@ class BigQueryIngestTests(unittest.TestCase):
         self.assertEqual(data["places"][0]["latitude"], 37.55)
         self.assertEqual(data["places"][0]["coordinate_system"], "EPSG:4326")
         self.write(places_path, ingest.PLACE_FIELDS + ingest.PLACE_OPTIONAL_FIELDS, [{
-            "place_id":"P-1", "place_name":"검토 장소", "location_review_status":"UNVERIFIED",
+            "place_id":"PLACE-1", "place_name":"검토 장소", "location_review_status":"UNVERIFIED",
             "latitude":"37.55", "longitude":"", "coordinate_system":"EPSG:4326",
         }])
         data = ingest.validate_catalog()

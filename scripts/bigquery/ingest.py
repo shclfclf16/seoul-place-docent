@@ -153,6 +153,7 @@ def validate_catalog():
             issues.append({"file": str(FILES["historical_records"][0].relative_to(ROOT)), "line": line, "record_id": identity, "reason": "|".join(sorted(set(reasons)))})
         else:
             cooked["canonical_source_url"] = canonical
+            cooked["_source_payload"] = dict(row)
             valid_records.append(cooked)
 
     for index, (line, row) in enumerate(raw_places):
@@ -178,6 +179,7 @@ def validate_catalog():
         if reasons:
             issues.append({"file": str(FILES["places"][0].relative_to(ROOT)), "line": line, "record_id": identity, "reason": "|".join(reasons)})
         else:
+            cooked["_source_payload"] = dict(row)
             valid_places.append(cooked)
 
     for link_index, (line, row) in enumerate(raw_links):
@@ -276,9 +278,13 @@ def bq_tables(project, dataset):
 def stage_rows(data, run_id, now):
     result = {"historical_records": [], "places": [], "record_place_links": []}
     for row in data["records"]:
-        result["historical_records"].append({**row, "source_payload": {key: value for key, value in row.items() if key != "canonical_source_url"}, "ingested_at": now, "updated_at": now, "content_hash": content_hash(row), "ingestion_run_id": run_id})
+        source_payload = row.get("_source_payload", {key: value for key, value in row.items() if key != "canonical_source_url"})
+        normalized = {key: value for key, value in row.items() if key != "_source_payload"}
+        result["historical_records"].append({**normalized, "source_payload": source_payload, "ingested_at": now, "updated_at": now, "content_hash": content_hash({**normalized, "source_payload": source_payload}), "ingestion_run_id": run_id})
     for row in data["places"]:
-        result["places"].append({**row, "source_payload": row, "updated_at": now, "content_hash": content_hash(row), "ingestion_run_id": run_id})
+        source_payload = row.get("_source_payload", row)
+        normalized = {key: value for key, value in row.items() if key != "_source_payload"}
+        result["places"].append({**normalized, "source_payload": source_payload, "updated_at": now, "content_hash": content_hash({**normalized, "source_payload": source_payload}), "ingestion_run_id": run_id})
     for row in data["links"]:
         result["record_place_links"].append({**row, "source_payload": row, "updated_at": now, "content_hash": content_hash(row), "ingestion_run_id": run_id})
     return result
