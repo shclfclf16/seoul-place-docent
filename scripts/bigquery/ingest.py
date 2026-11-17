@@ -3,14 +3,14 @@
 import argparse
 import csv
 import hashlib
+import io
 import json
 import os
 import re
 import sys
-import time
 import uuid
 from collections import Counter
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -284,15 +284,150 @@ def stage_rows(data, run_id, now):
     return result
 
 
-def merge_sql(target, stage, key_fields, fields):
-    on = " AND ".join(f"T.{key} IS NOT DISTINCT FROM S.{key}" for key in key_fields)
-    updates = [field for field in fields if field not in key_fields and field != "ingested_at"]
-    update = ", ".join(f"{field}=S.{field}" for field in updates)
-    names = ", ".join(fields)
-    values = ", ".join(f"S.{field}" for field in fields)
-    return f"""MERGE {target} T USING {stage} S ON {on}
-WHEN MATCHED AND T.content_hash != S.content_hash THEN UPDATE SET {update}
-WHEN NOT MATCHED THEN INSERT ({names}) VALUES ({values})"""
+def encode_ndjson(rows):
+    return ("".join(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n" for row in rows)).encode("utf-8")
+
+
+def load_json_rows(client, table_id, rows, schema, location, timeout):
+    """Append a batch through a BigQuery Load Job; never use streaming inserts."""
+    if not rows:
+        return None
+    from google.cloud import bigquery
+    payload = io.BytesIO(encode_ndjson(rows))
+    config = bigquery.LoadJobConfig(
+        schema=schema,
+        source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+        write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+    )
+    job = client.load_table_from_file(payload, table_id, job_config=config, location=location)
+    job.result(timeout=timeout)
+    if getattr(job, "errors", None):
+        raise RuntimeError("BQ_LOAD_JOB_FAILED")
+    return job
+
+
+def key_tuple(row, fields):
+    return tuple(row.get(field) for field in fields)
+
+
+def fetch_existing_rows(client, table_id, key_fields, incoming_rows, location, timeout, max_bytes):
+    """Read only matching keys in bounded arrays; return metadata needed for idempotency."""
+    if not incoming_rows:
+        return []
+    from google.cloud import bigquery
+    ids = sorted({str(row[key_fields[0]]) for row in incoming_rows if row.get(key_fields[0]) not in (None, "")})
+    if not ids:
+        return []
+    fields = ", ".join(key_fields + ["content_hash"])
+    result = []
+    batch_size = int(os.environ.get("BIGQUERY_INGEST_BATCH_SIZE", "5000"))
+    if not 1 <= batch_size <= 10000:
+        raise RuntimeError("BQ_INVALID_BATCH_SIZE")
+    for start in range(0, len(ids), batch_size):
+        batch = ids[start:start + batch_size]
+        sql = f"SELECT {fields} FROM `{table_id}` WHERE {key_fields[0]} IN UNNEST(@keys)"
+        config = bigquery.QueryJobConfig(
+            query_parameters=[bigquery.ArrayQueryParameter("keys", "STRING", batch)],
+            maximum_bytes_billed=max_bytes,
+        )
+        result.extend(client.query(sql, job_config=config, location=location).result(timeout=timeout))
+    return result
+
+
+def preflight_catalog(client, tables, staged, location, timeout, max_bytes):
+    """Find identical rows and conflicts before any catalog table is written."""
+    keys = {
+        "historical_records": ["record_id"],
+        "places": ["place_id"],
+        "record_place_links": ["record_id", "place_id", "relation_type"],
+    }
+    pending = {}
+    counts = {}
+    conflicts = []
+    for table_name, key_fields in keys.items():
+        table_id = tables[table_name].strip("`")
+        incoming = staged[table_name]
+        existing_rows = fetch_existing_rows(client, table_id, key_fields, incoming, location, timeout, max_bytes)
+        existing = {}
+        for row in existing_rows:
+            key = key_tuple(row, key_fields)
+            if key in existing:
+                conflicts.append({"table": table_name, "key": key, "reason": "DUPLICATE_KEY_IN_DESTINATION"})
+            existing[key] = row["content_hash"]
+        new_rows = []
+        duplicate_count = 0
+        for row in incoming:
+            key = key_tuple(row, key_fields)
+            old_hash = existing.get(key)
+            if old_hash is None:
+                new_rows.append(row)
+            elif old_hash == row["content_hash"]:
+                duplicate_count += 1
+            else:
+                conflicts.append({"table": table_name, "key": key, "reason": "CONTENT_CHANGED"})
+        pending[table_name] = new_rows
+        counts[table_name] = {"inserted": len(new_rows), "duplicates": duplicate_count}
+
+    # Keep canonical URLs unique across different record IDs without scanning the full table.
+    incoming_records = staged["historical_records"]
+    record_by_url = {row["canonical_source_url"]: row["record_id"] for row in incoming_records}
+    urls = sorted(record_by_url)
+    from google.cloud import bigquery
+    for start in range(0, len(urls), 5000):
+        batch = urls[start:start + 5000]
+        if not batch:
+            continue
+        sql = f"SELECT record_id, canonical_source_url FROM `{tables['historical_records'].strip('`')}` WHERE canonical_source_url IN UNNEST(@urls)"
+        config = bigquery.QueryJobConfig(
+            query_parameters=[bigquery.ArrayQueryParameter("urls", "STRING", batch)],
+            maximum_bytes_billed=max_bytes,
+        )
+        for row in client.query(sql, job_config=config, location=location).result(timeout=timeout):
+            if row["record_id"] != record_by_url[row["canonical_source_url"]]:
+                conflicts.append({"table": "historical_records", "key": (row["canonical_source_url"],), "reason": "DUPLICATE_SOURCE_URL"})
+    return pending, counts, conflicts
+
+
+def event_time():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def append_run_event(client, table_id, row, schema, location, timeout):
+    load_json_rows(client, table_id.strip("`"), [row], schema, location, timeout)
+
+
+def make_run_event(run_id, source_name, attempted, inserted, updated, duplicates, rejected,
+                   status, source_hash, limit, cursor, error=None, finished=False):
+    now = event_time()
+    return {
+        "run_id": run_id, "started_at": now, "finished_at": now if finished else None,
+        "source_name": source_name, "attempted_count": attempted, "inserted_count": inserted,
+        "updated_count": updated, "duplicate_count": duplicates, "rejected_count": rejected,
+        "status": status, "error_summary": error, "source_hash": source_hash,
+        "record_limit": limit, "resume_cursor": cursor,
+    }
+
+
+def make_source_event(run_id, table_name, source_hash, attempted, status, cursor, error=None,
+                      inserted=0, duplicates=0):
+    return {
+        "run_id": run_id, "source_name": str(FILES[table_name][0].relative_to(ROOT)),
+        "source_hash": source_hash, "attempted_count": attempted,
+        "inserted_count": inserted, "updated_count": 0, "duplicate_count": duplicates,
+        "rejected_count": 0, "status": status, "resume_cursor": cursor,
+        "error_summary": error, "updated_at": event_time(),
+    }
+
+
+def latest_run_event(client, table_id, run_id, location, timeout, max_bytes):
+    from google.cloud import bigquery
+    sql = f"SELECT run_id,source_hash,record_limit,status FROM `{table_id.strip('`')}` WHERE run_id=@run_id ORDER BY started_at DESC LIMIT 1"
+    config = bigquery.QueryJobConfig(
+        query_parameters=[bigquery.ScalarQueryParameter("run_id", "STRING", run_id)],
+        maximum_bytes_billed=max_bytes,
+    )
+    rows = list(client.query(sql, job_config=config, location=location).result(timeout=timeout))
+    return rows[0] if rows else None
 
 
 def apply_data(data, run_id, rejected, *, limit=None, query_dry_run=False, resume=False):
@@ -303,7 +438,7 @@ def apply_data(data, run_id, rejected, *, limit=None, query_dry_run=False, resum
     client = bigquery.Client(project=project, location=location)
     tables = bq_tables(project, dataset)
     if query_dry_run:
-        query = f"SELECT COUNT(*) AS rows FROM {tables['historical_records']} WHERE review_status = 'content_checked'"
+        query = f"SELECT COUNT(*) AS record_count FROM {tables['historical_records']} WHERE review_status = 'content_checked'"
         job = client.query(query, job_config=bigquery.QueryJobConfig(dry_run=True, use_query_cache=False, maximum_bytes_billed=max_bytes), location=location)
         print(json.dumps({"queryDryRun": True, "estimatedBytesProcessed": job.total_bytes_processed, "maximumBytesBilled": max_bytes}))
         return
@@ -312,15 +447,10 @@ def apply_data(data, run_id, rejected, *, limit=None, query_dry_run=False, resum
     client.query(ddl, location=location, job_config=bigquery.QueryJobConfig(maximum_bytes_billed=max_bytes)).result(timeout=timeout)
     source_hash = catalog_hash()
     if resume:
-        rows = list(client.query(
-            f"SELECT source_hash,record_limit,status FROM {tables['ingestion_runs']} WHERE run_id=@run_id",
-            job_config=bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter("run_id", "STRING", run_id)]),
-            location=location).result(timeout=timeout))
-        if not rows or rows[0]["status"] not in {"FAILED", "RUNNING"} or rows[0]["source_hash"] != source_hash or (limit is not None and rows[0]["record_limit"] != limit):
+        latest = latest_run_event(client, tables["ingestion_runs"], run_id, location, timeout, max_bytes)
+        if not latest or latest["status"] not in {"FAILED", "RUNNING"} or latest["source_hash"] != source_hash or (limit is not None and latest["record_limit"] != limit):
             raise RuntimeError("BQ_RESUME_MISMATCH")
-        limit = rows[0]["record_limit"]
-        client.query(f"UPDATE {tables['ingestion_runs']} SET status='RUNNING',finished_at=NULL,error_summary=NULL WHERE run_id=@run_id",
-                     job_config=bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter("run_id", "STRING", run_id)]), location=location).result(timeout=timeout)
+        limit = latest["record_limit"]
     started = datetime.now(timezone.utc)
     now = started.isoformat()
     staged = stage_rows(data, run_id, now)
@@ -331,150 +461,113 @@ def apply_data(data, run_id, rejected, *, limit=None, query_dry_run=False, resum
         staged["places"] = [row for row in staged["places"] if row["place_id"] in needed_places]
         staged["record_place_links"] = [row for row in staged["record_place_links"] if row["record_id"] in keep_ids]
 
-    cursor = "historical_records:0"
     run_row = {"run_id": run_id, "started_at": now, "finished_at": None, "source_name": "research-data/records.csv,places.csv,record_place_links.csv",
                "attempted_count": sum(len(rows) for rows in staged.values()) + rejected,
                "inserted_count": 0, "updated_count": 0, "duplicate_count": 0, "rejected_count": rejected,
-               "status": "RUNNING", "error_summary": None, "source_hash": source_hash, "record_limit": limit, "resume_cursor": cursor}
-    if not resume:
-        insert_errors = client.insert_rows_json(tables["ingestion_runs"], [run_row])
-        if insert_errors:
-            raise RuntimeError("BQ_RUN_LOG_WRITE_FAILED")
-        source_rows = []
-        for table_name in ("historical_records", "places", "record_place_links"):
-            path = FILES[table_name][0]
-            rejected_for_file = sum(1 for issue in data["issues"] if issue["file"] == str(path.relative_to(ROOT)))
-            source_rows.append({"run_id": run_id, "source_name": str(path.relative_to(ROOT)),
-                                "source_hash": hashlib.sha256(path.read_bytes()).hexdigest(),
-                                "attempted_count": len(staged[table_name]) + rejected_for_file,
-                                "inserted_count": 0, "updated_count": 0, "duplicate_count": 0,
-                                "rejected_count": rejected_for_file, "status": "RUNNING",
-                                "resume_cursor": "0", "error_summary": None, "updated_at": now})
-        source_errors = client.insert_rows_json(tables["ingestion_run_sources"], source_rows)
-        if source_errors:
-            finish_run(client, tables["ingestion_runs"], run_id, "FAILED", 0, 0, 0, rejected, "BQ_SOURCE_RUN_LOG_WRITE_FAILED")
-            raise RuntimeError("BQ_SOURCE_RUN_LOG_WRITE_FAILED")
+               "status": "RUNNING", "error_summary": None, "source_hash": source_hash, "record_limit": limit, "resume_cursor": "preflight"}
+    run_schema = [
+        bigquery.SchemaField("run_id", "STRING", mode="REQUIRED"), bigquery.SchemaField("started_at", "TIMESTAMP", mode="REQUIRED"),
+        bigquery.SchemaField("finished_at", "TIMESTAMP"), bigquery.SchemaField("source_name", "STRING", mode="REQUIRED"),
+        bigquery.SchemaField("attempted_count", "INT64", mode="REQUIRED"), bigquery.SchemaField("inserted_count", "INT64", mode="REQUIRED"),
+        bigquery.SchemaField("updated_count", "INT64", mode="REQUIRED"), bigquery.SchemaField("duplicate_count", "INT64", mode="REQUIRED"),
+        bigquery.SchemaField("rejected_count", "INT64", mode="REQUIRED"), bigquery.SchemaField("status", "STRING", mode="REQUIRED"),
+        bigquery.SchemaField("error_summary", "STRING"), bigquery.SchemaField("source_hash", "STRING"),
+        bigquery.SchemaField("record_limit", "INT64"), bigquery.SchemaField("resume_cursor", "STRING"),
+    ]
+    source_schema = [
+        bigquery.SchemaField("run_id", "STRING", mode="REQUIRED"), bigquery.SchemaField("source_name", "STRING", mode="REQUIRED"),
+        bigquery.SchemaField("source_hash", "STRING", mode="REQUIRED"), bigquery.SchemaField("attempted_count", "INT64", mode="REQUIRED"),
+        bigquery.SchemaField("inserted_count", "INT64", mode="REQUIRED"), bigquery.SchemaField("updated_count", "INT64", mode="REQUIRED"),
+        bigquery.SchemaField("duplicate_count", "INT64", mode="REQUIRED"), bigquery.SchemaField("rejected_count", "INT64", mode="REQUIRED"),
+        bigquery.SchemaField("status", "STRING", mode="REQUIRED"), bigquery.SchemaField("resume_cursor", "STRING"),
+        bigquery.SchemaField("error_summary", "STRING"), bigquery.SchemaField("updated_at", "TIMESTAMP", mode="REQUIRED"),
+    ]
+    load_json_rows(client, tables["ingestion_runs"].strip("`"), [run_row], run_schema, location, timeout)
+    for table_name in ("historical_records", "places", "record_place_links"):
+        path = FILES[table_name][0]
+        append_run_event(client, tables["ingestion_run_sources"], make_source_event(
+            run_id, table_name, hashlib.sha256(path.read_bytes()).hexdigest(), len(staged[table_name]), "RUNNING", "preflight"),
+            source_schema, location, timeout)
     if rejected:
         for table_name in ("historical_records", "places", "record_place_links"):
             path = str(FILES[table_name][0].relative_to(ROOT))
-            update_source_run(client, tables["ingestion_run_sources"], run_id, table_name, "REJECTED", "0", "CSV validation rejected rows", timeout)
-        finish_run(client, tables["ingestion_runs"], run_id, "REJECTED", 0, 0, 0, rejected, "CSV validation rejected rows; data tables were not changed.")
+            append_run_event(client, tables["ingestion_run_sources"], make_source_event(
+                run_id, table_name, hashlib.sha256(FILES[table_name][0].read_bytes()).hexdigest(),
+                len(staged[table_name]), "REJECTED", "validation", "CSV validation rejected rows"),
+                source_schema, location, timeout)
+        append_run_event(client, tables["ingestion_runs"], make_run_event(
+            run_id, run_row["source_name"], run_row["attempted_count"], 0, 0, 0, rejected,
+            "REJECTED", source_hash, limit, "validation", "CSV validation rejected rows; no catalog rows were loaded.", True),
+            run_schema, location, timeout)
         raise RuntimeError("BQ_INGEST_VALIDATION_FAILED")
 
     schemas_by_table = schemas()
-    staging_ids = {}
-    expires = datetime.now(timezone.utc) + timedelta(days=1)
-    merged = {"inserted": 0, "updated": 0, "duplicates": 0}
+    inserted = 0
+    duplicates = 0
     current_source = None
+    source_hashes = {name: hashlib.sha256(FILES[name][0].read_bytes()).hexdigest() for name in FILES}
+    source_counts = {}
     try:
         chunk_size = int(os.environ.get("BIGQUERY_INGEST_BATCH_SIZE", "5000"))
         if not 1 <= chunk_size <= 10000:
             raise RuntimeError("BQ_INVALID_BATCH_SIZE")
+        pending, preflight_counts, conflicts = preflight_catalog(
+            client, tables, staged, location, timeout, max_bytes)
+        if conflicts:
+            print(json.dumps({"runId": run_id, "status": "CONFLICT", "conflicts": conflicts[:100],
+                              "conflictCount": len(conflicts), "catalogRowsWritten": 0}, ensure_ascii=False))
+            raise RuntimeError("BQ_CONTENT_CONFLICT")
+        # All keys and hashes are checked before the first append. Re-running after a partial
+        # failure re-reads the destination and skips rows already loaded with the same hash.
         for table_name in ("historical_records", "places", "record_place_links"):
             current_source = table_name
-            stage_name = f"_staging_{table_name}_{run_id.replace('-', '')}"
-            stage_id = f"{project}.{dataset}.{stage_name}"
-            staging_ids[table_name] = f"`{stage_id}`"
-            config = bigquery.LoadJobConfig(schema=schemas_by_table[table_name], write_disposition="WRITE_TRUNCATE", source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON)
-            chunk_tables = []
-            chunks = [staged[table_name][i:i + chunk_size] for i in range(0, len(staged[table_name]), chunk_size)]
-            for chunk_index, chunk in enumerate(chunks):
-                chunk_name = f"_bqchunk_{table_name}_{run_id.replace('-', '')}_{chunk_index:06d}"
-                chunk_id = f"{project}.{dataset}.{chunk_name}"
-                chunk_tables.append(f"`{chunk_id}`")
-                try:
-                    existing = client.get_table(chunk_id)
-                except Exception as exc:
-                    if type(exc).__name__ not in {"NotFound", "NotFoundError"}:
-                        raise
-                    existing = None
-                if existing is not None and existing.num_rows == len(chunk):
-                    pass
-                else:
-                    for attempt in range(3):
-                        try:
-                            job = client.load_table_from_json(chunk, chunk_id, job_config=config, location=location)
-                            job.result(timeout=timeout)
-                            break
-                        except Exception:
-                            if attempt == 2:
-                                raise
-                            time.sleep(2 ** attempt)
-                part_table = client.get_table(chunk_id)
-                part_table.expires = expires
-                client.update_table(part_table, ["expires"])
-                cursor = f"{table_name}:{chunk_index + 1}"
-                update_resume_cursor(client, tables["ingestion_runs"], run_id, cursor, timeout)
-                update_source_run(client, tables["ingestion_run_sources"], run_id, table_name, "RUNNING", str(chunk_index + 1), None, timeout)
-            if chunk_tables:
-                union = " UNION ALL ".join(f"SELECT * FROM {part}" for part in chunk_tables)
-                client.query(f"CREATE OR REPLACE TABLE {staging_ids[table_name]} AS {union}", location=location,
-                             job_config=bigquery.QueryJobConfig(maximum_bytes_billed=max_bytes)).result(timeout=timeout)
-            else:
-                client.query(f"CREATE OR REPLACE TABLE {staging_ids[table_name]} AS SELECT * FROM {tables[table_name]} WHERE FALSE", location=location).result(timeout=timeout)
-            stage_table = client.get_table(stage_id)
-            stage_table.expires = expires
-            client.update_table(stage_table, ["expires"])
-            update_source_run(client, tables["ingestion_run_sources"], run_id, table_name, "STAGED", str(len(chunks)), None, timeout)
-
-        # Canonical URLs are unique across different record IDs; the CSV check catches intra-batch duplicates.
-        duplicates = list(client.query(f"SELECT S.record_id FROM {staging_ids['historical_records']} S JOIN {tables['historical_records']} T ON T.canonical_source_url=S.canonical_source_url AND T.record_id!=S.record_id LIMIT 20", location=location).result(timeout=timeout))
-        if duplicates:
-            raise RuntimeError("BQ_DUPLICATE_SOURCE_URL")
-
-        keys = {"historical_records": ["record_id"], "places": ["place_id"], "record_place_links": ["record_id", "place_id", "relation_type"]}
-        for table_name, stage in staging_ids.items():
-            fields = [field.name for field in schemas_by_table[table_name]]
-            join = " AND ".join(f"T.{key} IS NOT DISTINCT FROM S.{key}" for key in keys[table_name])
-            stats = list(client.query(f"SELECT COUNTIF(T.content_hash IS NULL) AS inserted, COUNTIF(T.content_hash!=S.content_hash) AS updated, COUNTIF(T.content_hash=S.content_hash) AS duplicates FROM {stage} S LEFT JOIN {tables[table_name]} T ON {join}", location=location).result(timeout=timeout))[0]
-            source_counts = {"inserted": int(stats["inserted"] or 0), "updated": int(stats["updated"] or 0), "duplicates": int(stats["duplicates"] or 0)}
-            merged["inserted"] += source_counts["inserted"]; merged["updated"] += source_counts["updated"]; merged["duplicates"] += source_counts["duplicates"]
-            if staged[table_name]:
-                sql = merge_sql(tables[table_name], stage, keys[table_name], fields)
-                job = client.query(sql, location=location, job_config=bigquery.QueryJobConfig(maximum_bytes_billed=max_bytes))
-                job.result(timeout=timeout)
-            update_source_run(client, tables["ingestion_run_sources"], run_id, table_name, "COMPLETED", str(len(chunks)), None, timeout, source_counts)
-        finish_run(client, tables["ingestion_runs"], run_id, "COMPLETED", merged["inserted"], merged["updated"], merged["duplicates"], 0, None)
-        print(json.dumps({"runId": run_id, "status": "COMPLETED", "attempted": run_row["attempted_count"], **merged, "rejected": 0, "stagingExpiresAt": expires.isoformat()}, ensure_ascii=False))
+            rows = pending[table_name]
+            loaded_count = 0
+            if rows:
+                append_run_event(client, tables["ingestion_run_sources"], make_source_event(
+                    run_id, table_name, source_hashes[table_name], len(staged[table_name]), "LOADING", "load-job"),
+                    source_schema, location, timeout)
+                for chunk_index in range(0, len(rows), chunk_size):
+                    chunk = rows[chunk_index:chunk_index + chunk_size]
+                    load_json_rows(client, tables[table_name].strip("`"), chunk,
+                                   schemas_by_table[table_name], location, timeout)
+                    loaded_count += len(chunk)
+                    source_counts[table_name] = {"inserted": loaded_count,
+                                                 "duplicates": preflight_counts[table_name]["duplicates"]}
+                    append_run_event(client, tables["ingestion_run_sources"], make_source_event(
+                        run_id, table_name, source_hashes[table_name], len(staged[table_name]), "LOADING",
+                        f"loaded:{loaded_count}", inserted=loaded_count,
+                        duplicates=preflight_counts[table_name]["duplicates"]), source_schema, location, timeout)
+            source_counts[table_name] = {"inserted": loaded_count,
+                                         "duplicates": preflight_counts[table_name]["duplicates"]}
+            append_run_event(client, tables["ingestion_run_sources"], make_source_event(
+                run_id, table_name, source_hashes[table_name], len(staged[table_name]), "COMPLETED", "complete",
+                inserted=loaded_count, duplicates=preflight_counts[table_name]["duplicates"]),
+                source_schema, location, timeout)
+            inserted += loaded_count
+            duplicates += preflight_counts[table_name]["duplicates"]
+        append_run_event(client, tables["ingestion_runs"], make_run_event(
+            run_id, run_row["source_name"], run_row["attempted_count"], inserted, 0, duplicates, 0,
+            "COMPLETED", source_hash, limit, "complete", finished=True), run_schema, location, timeout)
+        print(json.dumps({"runId": run_id, "status": "COMPLETED", "attempted": run_row["attempted_count"],
+                          "inserted": inserted, "updated": 0, "duplicates": duplicates, "rejected": 0,
+                          "writeMode": "BigQuery Load Jobs / WRITE_APPEND"}, ensure_ascii=False))
     except Exception as exc:
         safe_code = str(exc) if str(exc).startswith("BQ_") else type(exc).__name__
-        if current_source:
-            update_source_run(client, tables["ingestion_run_sources"], run_id, current_source, "FAILED", cursor, safe_code, timeout)
-        client.query(f"UPDATE {tables['ingestion_run_sources']} SET status='PAUSED',updated_at=CURRENT_TIMESTAMP() WHERE run_id=@run_id AND status IN ('RUNNING','STAGED')",
-                     job_config=bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter("run_id", "STRING", run_id)]), location=location).result(timeout=timeout)
-        finish_run(client, tables["ingestion_runs"], run_id, "FAILED", merged["inserted"], merged["updated"], merged["duplicates"], 0, safe_code)
+        affected_sources = [current_source] if current_source else ["historical_records", "places", "record_place_links"]
+        for failed_source in affected_sources:
+            append_run_event(client, tables["ingestion_run_sources"], make_source_event(
+                run_id, failed_source, source_hashes[failed_source], len(staged[failed_source]),
+                "CONFLICT" if safe_code == "BQ_CONTENT_CONFLICT" else "FAILED", "retry-from-csv", safe_code,
+                inserted=source_counts.get(failed_source, {}).get("inserted", 0),
+                duplicates=source_counts.get(failed_source, {}).get("duplicates", 0)),
+                source_schema, location, timeout)
+        append_run_event(client, tables["ingestion_runs"], make_run_event(
+            run_id, run_row["source_name"], run_row["attempted_count"], inserted, 0, duplicates, 0,
+            "CONFLICT" if safe_code == "BQ_CONTENT_CONFLICT" else "FAILED", source_hash, limit,
+            "retry-from-csv", safe_code, finished=True),
+            run_schema, location, timeout)
         raise
-
-
-def finish_run(client, run_table, run_id, status, inserted, updated, duplicates, rejected, summary):
-    from google.cloud import bigquery
-    query = f"""UPDATE {run_table} SET finished_at=@finished_at,status=@status,inserted_count=@inserted,updated_count=@updated,
-      duplicate_count=@duplicates,rejected_count=@rejected,error_summary=@summary WHERE run_id=@run_id"""
-    params = [bigquery.ScalarQueryParameter("finished_at", "TIMESTAMP", datetime.now(timezone.utc)), bigquery.ScalarQueryParameter("status", "STRING", status),
-              bigquery.ScalarQueryParameter("inserted", "INT64", inserted), bigquery.ScalarQueryParameter("updated", "INT64", updated),
-              bigquery.ScalarQueryParameter("duplicates", "INT64", duplicates), bigquery.ScalarQueryParameter("rejected", "INT64", rejected),
-              bigquery.ScalarQueryParameter("summary", "STRING", summary), bigquery.ScalarQueryParameter("run_id", "STRING", run_id)]
-    client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=params), location=client.location).result(timeout=20)
-
-
-def update_resume_cursor(client, run_table, run_id, cursor, timeout):
-    from google.cloud import bigquery
-    query = f"UPDATE {run_table} SET resume_cursor=@cursor WHERE run_id=@run_id"
-    params = [bigquery.ScalarQueryParameter("cursor", "STRING", cursor), bigquery.ScalarQueryParameter("run_id", "STRING", run_id)]
-    client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=params), location=client.location).result(timeout=timeout)
-
-
-def update_source_run(client, source_table, run_id, table_name, status, cursor, error, timeout, counts=None):
-    from google.cloud import bigquery
-    source_name = str(FILES[table_name][0].relative_to(ROOT))
-    counts = counts or {}
-    query = f"UPDATE {source_table} SET status=@status,resume_cursor=@cursor,error_summary=@error,inserted_count=COALESCE(@inserted,inserted_count),updated_count=COALESCE(@updated,updated_count),duplicate_count=COALESCE(@duplicates,duplicate_count),updated_at=CURRENT_TIMESTAMP() WHERE run_id=@run_id AND source_name=@source_name"
-    params = [bigquery.ScalarQueryParameter("status", "STRING", status), bigquery.ScalarQueryParameter("cursor", "STRING", cursor),
-              bigquery.ScalarQueryParameter("error", "STRING", error), bigquery.ScalarQueryParameter("run_id", "STRING", run_id),
-              bigquery.ScalarQueryParameter("source_name", "STRING", source_name),
-              bigquery.ScalarQueryParameter("inserted", "INT64", counts.get("inserted")), bigquery.ScalarQueryParameter("updated", "INT64", counts.get("updated")),
-              bigquery.ScalarQueryParameter("duplicates", "INT64", counts.get("duplicates"))]
-    client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=params), location=client.location).result(timeout=timeout)
 
 
 def main():

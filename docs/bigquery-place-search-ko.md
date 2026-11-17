@@ -62,13 +62,30 @@ BigQuery는 외래키를 강제로 검사하지 않습니다. 적재 스크립�
    pnpm bigquery:validate
    ```
 
-7. 보고서에서 오류와 후보 자료 상태를 검토합니다. DDL 및 메타데이터 적재는 별도 승인 후 담당자가 다음 명령을 실행해야 합니다.
+7. 보고서에서 오류와 후보 자료 상태를 검토합니다. 실제 쓰기는 별도 승인과 Google 인증 확인 후 담당자가 다음 명령을 실행해야 합니다. 지금은 읽기 전용 검증 명령만 사용합니다.
 
    ```powershell
    pnpm bigquery:validate --apply --confirm APPLY
    ```
 
-적재 스크립트는 신규 검토 카탈로그 테이블만 생성하고 MERGE합니다. `historical_records_test`는 수정하지 않습니다. 관리자 권한이나 쓰기 역할이 필요한 실제 적재는 이 작업 중 실행하지 않았습니다. 공개 승인 판단은 별도 연구 검토입니다.
+적재 스크립트는 BigQuery Load Job의 `WRITE_APPEND`로 신규 행만 추가합니다. 동일 키와 동일 해시의 행은 건너뛰고, 동일 키의 내용 해시가 달라졌으면 충돌을 보고하고 자료 테이블 적재를 시작하지 않습니다. 로그도 Load Job append-only 방식으로 기록하므로 실행 상태 변경 때마다 같은 run ID의 새 이력 행이 추가됩니다. DML·스트리밍 입력·전체 테이블 덮어쓰기는 사용하지 않습니다. `historical_records_test`는 읽거나 수정하지 않습니다. 실제 적재는 `--apply --confirm APPLY`를 명시해야 하며, 이 작업 중 실행하지 않았습니다.
+
+Sandbox 적재 경로는 세 CSV를 먼저 전부 검증하고, BigQuery에서 입력 키만 읽어 충돌을 사전 검사한 뒤 새 행만 각 테이블에 Load Job으로 추가합니다. 세 테이블은 BigQuery 트랜잭션으로 묶이지 않으므로 중간 실패 후 같은 명령을 다시 실행하면 이미 들어간 동일 행은 건너뛰고 나머지를 이어갑니다. 내용이 달라진 기존 키가 하나라도 있으면 자동 수정하지 않습니다. 작업은 한 번에 한 명만 시작하세요. 중간 실패 후 동일한 CSV를 그대로 재실행해도 자동으로 중복을 건너뜁니다. 출력된 UUID로 같은 실행 이력을 이어가려면 다음처럼 `--resume`을 덧붙입니다.
+
+   ```powershell
+   pnpm bigquery:validate --apply --confirm APPLY --resume 00000000-0000-4000-8000-000000000000
+   ```
+
+   위 UUID는 형식 예시입니다. 실제 오류 출력에 표시된 `runId`를 사용하세요. CSV 내용이나 `--limit`이 달라졌다면 `--resume` 대신 새 실행을 시작해야 합니다.
+
+성공 후에는 BigQuery Console에서 다음 세 조회를 실행해 건수를 확인합니다. 자료 7건·장소 3건·연결 7건이 모두 신규 테이블에 보이는지 확인하고, `historical_records_test`는 그대로 7건인지 확인합니다.
+
+```sql
+SELECT COUNT(*) AS record_count FROM `seoul-place-docent-514906.seoul_history.historical_records`;
+SELECT COUNT(*) AS place_count FROM `seoul-place-docent-514906.seoul_history.places`;
+SELECT COUNT(*) AS link_count FROM `seoul-place-docent-514906.seoul_history.record_place_links`;
+SELECT COUNT(*) AS test_record_count FROM `seoul-place-docent-514906.seoul_history.historical_records_test`;
+```
 
 ## 웹사이트와 MCP 설정
 
