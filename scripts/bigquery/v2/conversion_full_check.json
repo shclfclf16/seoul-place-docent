@@ -1,0 +1,37 @@
+{
+  "file_stats": {
+    "documents": {
+      "rows": 1336,
+      "jsonl_bytes": 11077410,
+      "max_line_chars": 70772
+    },
+    "news": {
+      "rows": 25085,
+      "jsonl_bytes": 85389578,
+      "max_line_chars": 16647
+    },
+    "photos": {
+      "rows": 74836,
+      "jsonl_bytes": 415760793,
+      "max_line_chars": 162245
+    },
+    "videos": {
+      "rows": 4612,
+      "jsonl_bytes": 96809421,
+      "max_line_chars": 1656312
+    },
+    "places": {
+      "rows": 22306,
+      "jsonl_bytes": 21004640,
+      "max_line_chars": 4873
+    },
+    "record_place_links": {
+      "rows": 163345,
+      "jsonl_bytes": 151443322,
+      "max_line_chars": 54474
+    }
+  },
+  "total_rows": 291520,
+  "total_jsonl_bytes": 781485164,
+  "verified": true
+}
