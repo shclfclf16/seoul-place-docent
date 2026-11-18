@@ -1,3 +1,4 @@
+import {readCandidateRecords, type CandidateSearch} from './candidate-records';
 import type {GoogleAuth} from 'google-auth-library';
 import type {Address} from '@/lib/providers';
 import {coordinates} from '@/lib/providers';
@@ -112,4 +113,9 @@ export async function getBigQueryPlaceHistory(address:Address) {
   try{const found=await coordinates(address,env);if(found.status==='verified'&&typeof found.x==='number'&&typeof found.y==='number')point={x:found.x,y:found.y};}catch{/* Exact address matching still works without a verified nearby coordinate. */}
   const result=await readVerifiedPlaceRecords(process.env,{address,point},{getToken:accessToken});
   return {status:result.status,records:result.status==='ok'?result.records:[],scenes:result.status==='ok'?placeRecordsAsScenes(result.records):[],...(result.status==='ok'?{location:result.location}:{})};
+}
+
+/** Private Preview admin metadata only; never called by public search or MCP. */
+export function getBigQueryCandidateRecords(input:CandidateSearch) {
+  return readCandidateRecords(process.env,input,{getToken:accessToken});
 }

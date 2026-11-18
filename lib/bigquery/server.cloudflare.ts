@@ -1,3 +1,4 @@
+import type {CandidateSearch, CandidateResult} from './candidate-records';
 import type {BigQueryResult} from './records';
 import type {CatalogDiagnosticsResult} from './catalog-diagnostics';
 import type {ClassroomRecordsResult} from './classroom-records';
@@ -21,4 +22,9 @@ export async function getClassroomDemoRecords(): Promise<ClassroomRecordsResult>
 /** Cloudflare's current public MCP runtime does not hold BigQuery credentials. */
 export async function getBigQueryPlaceHistory(_address:Address) {
   return {status:'disabled' as const,records:[],scenes:[]};
+}
+
+/** Candidate review data is never available from the public Cloudflare runtime. */
+export async function getBigQueryCandidateRecords(_input:CandidateSearch):Promise<CandidateResult> {
+  return {status:"disabled"};
 }
