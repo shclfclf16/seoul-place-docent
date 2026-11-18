@@ -1,7 +1,6 @@
 import {POST,GET,OPTIONS,DELETE,HEAD} from '../../app/mcp/route';
 import {env} from '../../lib/runtime-env';
 import {configuredMcpOrigins,originError,mcpHeaders} from '../../lib/mcp-http';
-import {archiveWorkbookStatus} from '../../lib/archive-workbook';
 
 /** Public, read-only MCP deployment. No Sites dispatcher or OAuth middleware. */
 export default {async fetch(request:Request):Promise<Response>{
@@ -11,8 +10,8 @@ export default {async fetch(request:Request):Promise<Response>{
  const url=new URL(request.url);const path=url.pathname;
  if(path==='/health'||['/mcp','/api/public-mcp'].includes(path)&&url.searchParams.get('__route')==='health'){
   if(request.method!=='GET'&&request.method!=='HEAD')return new Response(null,{status:405,headers:{Allow:'GET, HEAD'}});
-  const configured=!!env.JUSO_API_KEY;
-  return Response.json({status:configured?'ready':'not_configured',service:'seoul-place-docent-public-mcp',auth:'none',addressConfigured:configured,photoGpsConfigured:!!env.KAKAO_REST_API_KEY||env.MCP_MAP_ADDRESS_URL==='https://seoul-place-history.xeonire.chatgpt.site/api/map-address',auditConfigured:!!env.DB||!!(env.MCP_AUDIT_URL&&env.MCP_AUDIT_TOKEN),auditStorage:env.DB?'d1':env.MCP_AUDIT_URL&&env.MCP_AUDIT_TOKEN?'https-receiver':'none',modelCalls:0,mcpPath:'/mcp',dataset:archiveWorkbookStatus}, {status:configured?200:503,headers:mcpHeaders});
+  const configured=!!env.MCP_ADDRESS_SIGNING_SECRET;
+  return Response.json({status:configured?'ready':'not_configured',service:'seoul-place-docent-public-mcp',auth:'none',addressConfigured:configured,bigQueryPlaceSearch:false,modelCalls:0,mcpPath:'/mcp'}, {status:configured?200:503,headers:mcpHeaders});
  }
  if(!['/mcp','/api/public-mcp'].includes(path))return new Response('Not found',{status:404,headers:mcpHeaders});
  const handler=({POST,GET,HEAD,DELETE,OPTIONS} as Record<string,(r:Request)=>Response|Promise<Response>>)[request.method];
