@@ -1,6 +1,7 @@
 -- NOTE: Only private reviewer/admin read access. No public MCP, no auto-approval.
 -- ZIP SHA256: 15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90
 -- Dataset: seoul-place-docent-514906.seoul_history
+-- Source table suffix: 15dcc4c58945; no upload required for existing snapshots.
 -- The four views below are intentionally named with the input ZIP hash.
 -- They do not replace historical_records / places / record_place_links.
 
@@ -58,7 +59,7 @@ SELECT
   FALSE AS may_embed,
   FALSE AS may_display,
   FALSE AS may_store
-FROM `seoul-place-docent-514906.seoul_history.rawv2_documents_15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90` AS r
+FROM `seoul-place-docent-514906.seoul_history.rawv2_documents_15dcc4c58945` AS r
 UNION ALL
 SELECT
   r.record_id,
@@ -113,7 +114,7 @@ SELECT
   FALSE AS may_embed,
   FALSE AS may_display,
   FALSE AS may_store
-FROM `seoul-place-docent-514906.seoul_history.rawv2_news_15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90` AS r
+FROM `seoul-place-docent-514906.seoul_history.rawv2_news_15dcc4c58945` AS r
 UNION ALL
 SELECT
   r.record_id,
@@ -168,7 +169,7 @@ SELECT
   FALSE AS may_embed,
   FALSE AS may_display,
   FALSE AS may_store
-FROM `seoul-place-docent-514906.seoul_history.rawv2_photos_15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90` AS r
+FROM `seoul-place-docent-514906.seoul_history.rawv2_photos_15dcc4c58945` AS r
 UNION ALL
 SELECT
   r.record_id,
@@ -223,19 +224,19 @@ SELECT
   FALSE AS may_embed,
   FALSE AS may_display,
   FALSE AS may_store
-FROM `seoul-place-docent-514906.seoul_history.rawv2_videos_15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90` AS r;
+FROM `seoul-place-docent-514906.seoul_history.rawv2_videos_15dcc4c58945` AS r;
 
 CREATE VIEW IF NOT EXISTS `seoul-place-docent-514906.seoul_history.v2_places_15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90` AS
 SELECT p.*,
   SAFE_CAST(NULLIF(p.latitude, '') AS FLOAT64) AS latitude_value,
   SAFE_CAST(NULLIF(p.longitude, '') AS FLOAT64) AS longitude_value,
   FALSE AS approved_location
-FROM `seoul-place-docent-514906.seoul_history.rawv2_places_15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90` AS p;
+FROM `seoul-place-docent-514906.seoul_history.rawv2_places_15dcc4c58945` AS p;
 
 CREATE VIEW IF NOT EXISTS `seoul-place-docent-514906.seoul_history.v2_links_15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90` AS
 SELECT l.*,
   FALSE AS approved_relation
-FROM `seoul-place-docent-514906.seoul_history.rawv2_record_place_links_15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90` AS l;
+FROM `seoul-place-docent-514906.seoul_history.rawv2_record_place_links_15dcc4c58945` AS l;
 
 CREATE VIEW IF NOT EXISTS `seoul-place-docent-514906.seoul_history.v2_relation_audit_15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90` AS
 SELECT

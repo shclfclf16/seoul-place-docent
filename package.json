@@ -23,7 +23,7 @@
     "build:mcp-public:vercel": "node scripts/build-public-mcp-vercel.mjs",
     "bigquery:v2:plan": "python scripts/bigquery/v2/load_zip_bigquery.py",
     "bigquery:v2:audit": "python scripts/bigquery/v2/audit_snapshot.py",
-    "test:bigquery-v2": "python -m unittest discover -s tests -p test_bigquery_v2.py"
+    "test:bigquery-v2": "python -m unittest discover -s tests -p test_bigquery_v2*.py"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

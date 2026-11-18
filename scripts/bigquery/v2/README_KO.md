@@ -1,5 +1,36 @@
 # 서울 도슨트 BigQuery v2 — 비공개 원본 스냅샷
 
+> **2026-11-19 갱신:** 기존 `rawv2_<kind>_15dcc4c58945` 6개 테이블에 291,520행이 이미 있습니다.
+> 실조회 및 원본 전체 필드 해시 대조를 통과했으므로 **재업로드·복제하지 않습니다**.
+> 이전 전체 64자리 이름의 NOT_LOADED 결과는 이름 선택의 차이이며 데이터 누락이 아닙니다.
+> 검증 결과: `docs/bigquery-v2-legacy-validation-ko.md`.
+
+## 기존 12자리 해시 테이블 읽기 전용 재사용
+
+```powershell
+# 메타데이터·스키마 비교만 (쿼리 실행 없음)
+python scripts/bigquery/v2/verify_sandbox.py --project seoul-place-docent-514906 --dataset seoul_history --confirm-read seoul-place-docent-514906.seoul_history --legacy-hash-tables --metadata-only --report outputs/bigquery-v2/legacy-schema.json
+# 전체 원본 필드 및 관계 검증: 모든 dry run 합계를 먼저 확인, 누적 750 MB 제한
+python scripts/bigquery/v2/verify_sandbox.py --project seoul-place-docent-514906 --dataset seoul_history --confirm-read seoul-place-docent-514906.seoul_history --legacy-hash-tables --max-bytes 750000000 --execute-counts --zip $zip --report outputs/bigquery-v2/legacy-live.json
+# 기존 테이블 참조 SQL 파일만 생성. CREATE VIEW 실행은 별도 승인 필요.
+python scripts/bigquery/v2/generate_views.py --legacy-hash-tables
+```
+
+`--legacy-hash-tables`는 명시적 읽기 이름 선택입니다. 자동 fallback이나 테이블 이름 변경이 아닙니다.
+전체 SHA256은 manifest와 모든 행의 `_batch_sha256`에서 검증하고, 원본 ZIP 파일 자체도 해시 대조합니다.
+원본 필드는 열 순서대로 UTF-8 바이트 길이와 값을 결합하여 행 해시를 계산하고, CSV 행 번호 순서로
+행 해시를 결합하여 다시 SHA256을 계산합니다. SQL과 Python 모두 소문자 hex를 사용합니다.
+저장된 `_row_sha256`도 별도 집계하여 원본과 대조하므로 기존 해시 열만 신뢰하지 않습니다.
+클라우드에서 반환하는 것은 6개 내용 집계와 1개 관계 집계뿐이며 원문/미디어를 내려받지 않습니다.
+테이블 description 공란은 데이터 불일치로 간주하지 않습니다. 스키마 불일치는 dry run 전에 중단합니다.
+모든 dry run의 예상 바이트 합계가 예산을 넘으면 어떤 실제 쿼리도 실행하지 않습니다.
+실제 쿼리는 이전 쿼리의 과금 바이트를 뺀 잔여 예산을 maximum_bytes_billed로 설정합니다.
+기본 100 MB에서는 이번 전체 검증을 차단합니다. 필요할 때만 명시적 상한(최대 1 GB)을 설정합니다.
+
+아래 기존 적재 절차는 **다른 신규 ZIP에 대한 별도 승인 시에만 참고**합니다.
+이번 기존 스냅샷을 새 64자리 이름으로 다시 적재하는 절차가 아닙니다.
+
+
 ## 보호 범위
 
 기존 historical_records, places, record_place_links, historical_records_test,
@@ -32,7 +63,7 @@ PHOTO, MAP, DRAWING은 photos.csv에 함께 있으며 record_type을 임의로 �
 $zip = 'C:\Users\shclf\Downloads\seoul_bigquery_v2\raw_data.zip'
 python scripts/bigquery/v2/audit_snapshot.py --zip $zip --out outputs/bigquery-v2/full-audit.json --preserve-dir outputs/bigquery-v2/originals
 python scripts/bigquery/v2/load_zip_bigquery.py --zip $zip --plan-out outputs/bigquery-v2/load-plan.json
-python scripts/bigquery/v2/generate_views.py
+python scripts/bigquery/v2/generate_views.py --legacy-hash-tables
 $env:RAW_V2_ZIP = $zip
 python -m unittest discover -s tests -p test_bigquery_v2.py -v
 ```
@@ -81,9 +112,9 @@ ALLOWED_REPORTED나 원문확인완료 등의 자유서술을 승인값으로 �
 적재 승인 및 여섯 테이블 생성 후 실제 Sandbox 읽기 검증:
 
 ```powershell
-python scripts/bigquery/v2/verify_sandbox.py --project seoul-place-docent-514906 --dataset seoul_history --confirm-read seoul-place-docent-514906.seoul_history
+python scripts/bigquery/v2/verify_sandbox.py --project seoul-place-docent-514906 --dataset seoul_history --confirm-read seoul-place-docent-514906.seoul_history --report outputs/bigquery-v2/full-hash-check.json
 # 위 단계는 메타데이터/쿼리 dry run. 실제 COUNT 조회는 추가 옵션이 필요합니다.
-python scripts/bigquery/v2/verify_sandbox.py --project seoul-place-docent-514906 --dataset seoul_history --confirm-read seoul-place-docent-514906.seoul_history --execute-counts
+python scripts/bigquery/v2/verify_sandbox.py --project seoul-place-docent-514906 --dataset seoul_history --confirm-read seoul-place-docent-514906.seoul_history --execute-counts --zip $zip --report outputs/bigquery-v2/full-hash-check.json
 ```
 
 기본 쿼리 예산은 100,000,000 bytes, CLI 상한은 1,000,000,000 bytes입니다.
@@ -124,5 +155,5 @@ EXACT_SITE 원본 2건도 검증된 직접일치가 아닙니다.
 ## 실행 상태
 
 로컬 전수 검사/모의 재시도/승인 게이트/기존 회귀/빌드 결과는 docs/bigquery-v2-validation-ko.md에 기록합니다.
-실제 BigQuery 업로드·Sandbox 실쿼리·클라우드 뷰 생성·실배포는 별도 승인 전 미실행입니다.
+기존 12자리 테이블의 Sandbox 실쿼리는 후속 보고서에서 확인했습니다. 이번 작업에서 업로드·클라우드 뷰 생성·실배포는 하지 않았습니다.
 Draft PR #6 유지, main 병합 및 Production 배포 금지.

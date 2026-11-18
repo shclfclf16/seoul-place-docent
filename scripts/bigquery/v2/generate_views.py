@@ -16,12 +16,13 @@ CORE = [
 ]
 
 
-def gen_sql(project, dataset, sha):
+def gen_sql(project, dataset, sha, legacy_hash_tables=False):
     verify_names(project, dataset, 'asia-northeast3')
     bq_table_name('documents', sha)
     batch=sha
     full=lambda name: f'`{project}.{dataset}.{name}`'
-    raw=lambda typ: full(f'rawv2_{typ}_{batch}')
+    raw_batch = sha[:12] if legacy_hash_tables else sha
+    raw=lambda typ: full(f'rawv2_{typ}_{raw_batch}')
     view=lambda name:full(f'v2_{name}_{batch}')
     queries=[]
     branches=[]
@@ -78,6 +79,7 @@ LEFT JOIN %s p ON p.place_id=l.place_id;'''%(view('relation_audit'),view('links'
     summary=f'''-- NOTE: Only private reviewer/admin read access. No public MCP, no auto-approval.
 -- ZIP SHA256: {sha}
 -- Dataset: {project}.{dataset}
+-- Source table suffix: {raw_batch}; no upload required for existing snapshots.
 -- The four views below are intentionally named with the input ZIP hash.
 -- They do not replace historical_records / places / record_place_links.
 
@@ -89,7 +91,7 @@ def audit_sql(project,dataset,sha):
     verify_names(project, dataset, 'asia-northeast3')
     bq_table_name('documents', sha)
     view=lambda name:f'`{project}.{dataset}.v2_{name}_{sha}`'
-    return f'''-- Read-only queries. Execute ONLY after uploading six staging tables and creating candidate views.
+    return f'''-- Read-only queries. Execute ONLY after verifying existing staging tables and separately approving candidate view creation.
 SELECT source_file_type, record_type, COUNT(*) AS record_count
 FROM {view('records')}
 GROUP BY 1,2 ORDER BY record_count DESC;
@@ -117,12 +119,13 @@ def main():
     pa.add_argument('--manifest',type=Path,default=Path(__file__).with_name('schema_manifest.json'))
     pa.add_argument('--project',default='seoul-place-docent-514906')
     pa.add_argument('--dataset',default='seoul_history')
+    pa.add_argument('--legacy-hash-tables', action='store_true', help='Read existing 12-character hash tables; view names retain the full hash')
     pa.add_argument('--out-dir',type=Path,default=Path(__file__).parent)
     a=pa.parse_args()
     manifest=json.loads(a.manifest.read_text(encoding='utf-8'))
     sha=manifest['archive_sha256']
     a.out_dir.mkdir(parents=True,exist_ok=True)
-    (a.out_dir/'candidate_views.sql').write_text(gen_sql(a.project,a.dataset,sha),encoding='utf-8')
+    (a.out_dir/'candidate_views.sql').write_text(gen_sql(a.project,a.dataset,sha,a.legacy_hash_tables),encoding='utf-8')
     (a.out_dir/'audit_queries.sql').write_text(audit_sql(a.project,a.dataset,sha),encoding='utf-8')
     print('Generated read-only candidate views and verification queries; no BigQuery writes.')
 

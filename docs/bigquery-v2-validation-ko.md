@@ -1,5 +1,7 @@
 # BigQuery v2 검증 결과 — 2026-11-19 (KST)
 
+> 후속 정정: 기존 12자리 해시 테이블 6개는 이미 존재하며 원본과 일치합니다. 아래 NOT_LOADED는 64자리 이름만 조회한 당시 결과입니다. 최신 결과는 [기존 테이블 재사용 검증](bigquery-v2-legacy-validation-ko.md)을 참고하세요.
+
 대상: shclfclf16/seoul-place-docent, codex/bigquery-place-search, Draft PR #6.
 
 ## 구현 파일

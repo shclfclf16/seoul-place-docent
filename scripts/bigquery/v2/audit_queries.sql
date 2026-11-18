@@ -1,4 +1,4 @@
--- Read-only queries. Execute ONLY after uploading six staging tables and creating candidate views.
+-- Read-only queries. Execute ONLY after verifying existing staging tables and separately approving candidate view creation.
 SELECT source_file_type, record_type, COUNT(*) AS record_count
 FROM `seoul-place-docent-514906.seoul_history.v2_records_15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90`
 GROUP BY 1,2 ORDER BY record_count DESC;
