@@ -61,7 +61,7 @@ test('all eight actual MCP tools run without operator model calls; address and G
   assert.deepEqual(data(await invoke('generate_place_answer',{token})).neighborhood,packet.neighborhood);
   assert.ok(data(await invoke('get_place_history',{token})).neighborhood.scenes.length>0);
   const record=packet.neighborhood.records[0];
-  const checked=data(await invoke('validate_place_answer',{token,question:packet.question,answer:{question_type:'동네 역사',paragraphs:[{heading:'근거',text:record.text.slice(0,100),evidence_ids:[record.id]}],held:[]}}));assert.equal(checked.verification,'mechanical_only');
+  const checked=data(await invoke('validate_place_answer',{token,question:packet.question,answer:{question_type:'동네 역사',paragraphs:[{heading:'근거',text:record.text.slice(0,100),evidence_ids:[record.id]}],held:[]}}));assert.equal(checked.verification,'mechanical_and_keyword_relevance');
   assert.equal(data(await invoke('resolve_photo_location')).status,'needs_location');
   assert.equal((await invoke('resolve_photo_location',{latitude:91,longitude:0})).isError,true);
   assert.equal((await invoke('resolve_photo_location',{latitude:35,longitude:129})).isError,true);

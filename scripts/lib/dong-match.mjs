@@ -21,6 +21,17 @@ export function matchDongs(text,patterns,onlyDistrict){
   const hits=patterns.filter(p=>(!onlyDistrict||p.district===onlyDistrict)&&p.names.some(n=>has(text,n))&&(!p.needsDistrict||onlyDistrict===p.district||text.includes(p.district)));
   const exact=hits.filter(p=>has(text,p.dong));return (exact.length?exact:hits).slice(0,6);
 }
+/** Link archive photos from the source's place field first, then its title.
+ * Description text is intentionally excluded: historical context can mention a different
+ * neighborhood (for example, a market that moved) without locating the photographed scene. */
+export function matchMuseumPhotoDongs(item,patterns){
+  const byPlace=matchDongs(item.place||'',patterns);
+  const byTitle=matchDongs(item.title||'',patterns);
+  if(byPlace.length&&byTitle.length&&!byPlace.some(a=>byTitle.some(b=>a.district===b.district&&a.dong===b.dong)))return {dongs:[],conflict:true,basis:'conflicting_place_and_title'};
+  if(byPlace.length)return {dongs:byPlace,conflict:false,basis:'source_place'};
+  if(byTitle.length)return {dongs:byTitle,conflict:false,basis:'source_title'};
+  return {dongs:[],conflict:false,basis:'unmatched'};
+}
 /** Spread at most `cap` photos evenly through time as district background. */
 export function backgroundPick(list,cap=40){const s=[...list].sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));const step=Math.max(1,s.length/cap);const out=[];for(let k=0;k<s.length&&out.length<cap;k+=step)out.push(s[Math.floor(k)]);return out;}
 /**

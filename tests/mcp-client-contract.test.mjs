@@ -9,6 +9,10 @@ test('MCP exposes evidence preparation, GPS fallback and mechanical validation',
  assert.ok(route.includes("status:'needs_location'"));assert.ok(route.includes('needsConfirmation:true'));
  assert.equal(route.includes('spend('),false);
  assert.equal(route.includes('beforeRequest'),false);
+ assert.ok(route.includes('mcpOriginalPhotoUrl'));
+ assert.equal(route.includes('photoResearchThumbnail'),false);
+ assert.ok(route.includes('출처 자료에 직접 저장된 imageUrl'));
+ assert.ok(route.includes('제목·기관·원문 링크·공간 범위'));
 });
 test('grouped history pagination uses the actual scene count',()=>{
  assert.ok(route.includes('paginateHistoryScenes(story.scenes,input.offset,input.limit)'));

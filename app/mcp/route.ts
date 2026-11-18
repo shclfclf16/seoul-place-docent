@@ -7,7 +7,7 @@ import {getDocentStory, getFullDocentStory} from '@/lib/docent-data';
 import {getDocentVideoCandidates} from '@/lib/docent-videos';
 import {resolveMcpMapAddress as mapAddress} from '@/lib/mcp-map-address';
 import {readAttachedPhoto} from '@/lib/mcp-photo';
-import {photoResearchThumbnail} from '@/lib/photo-research';
+import {mcpOriginalPhotoUrl} from '@/lib/photo-research';
 import {searchAddresses, ServiceError, verifyAddress} from '@/lib/providers';
 import {generatePlaceAnswer, placeAnswerStats, pickScenes, validateAnswer, sceneSource, logClientDocent, QUESTION_TYPES} from '@/lib/place-answer';
 import {handleMcpMessage, rpcError, textResult, type McpTool, type McpToolResult} from '@/lib/mcp-protocol';
@@ -34,13 +34,13 @@ const tools: McpTool[] = [
   },
   {
     name:'prepare_place_answer',
-    description:'사용자 자신의 AI가 분류·도슨트 작성에 사용할 사진·영상 후보·역사·출처와 작성 지침을 반환합니다. 서버 AI 호출은 0회입니다. 먼저 질문 유형을 분류해 questionType에 넣고, 반환된 근거로 당신이 최종 답변을 작성하세요. token 또는 address 중 하나가 필요합니다. 장소와 동네를 구분하고 문단당 근거를 연결하세요.',
+    description:'사용자 자신의 AI가 도슨트 작성에 사용할 역사자료·출처·직접 연결된 사진 URL과 작성 지침을 반환합니다. 서버 AI 호출은 0회입니다. 제목·기관·원문 링크·공간 범위를 주장과 대조하고, 근거와 맞지 않는 자료나 근거 밖 사진을 사용하지 마세요. token 또는 address 중 하나가 필요합니다.',
     inputSchema:{type:'object',properties:{token:{type:'string',minLength:1,maxLength:6000},address:{type:'string',minLength:2,maxLength:100},question:{type:'string',maxLength:300},questionType:{type:'string',enum:[...QUESTION_TYPES]}},oneOf:[{required:['token']},{required:['address']}],additionalProperties:false},
     annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:true}
   },
   {
     name:'validate_place_answer',
-    description:'당신이 작성한 설명 JSON을 같은 token·question의 근거 기록과 기계적으로 대조합니다. 미등록 근거 id·추가 숫자·과도한 문장 길이를 걸러 냅니다. AI를 호출하지 않으며 의미적 사실 전체를 보증하지 않습니다. 거절된 문단은 수정하거나 보류하세요.',
+    description:'당신이 작성한 설명 JSON을 같은 token·question의 근거와 대조합니다. 등록된 ID, 출처 제목·기관·URL, 주제 단어 일치, 장소 범위, 숫자 및 문장 길이를 확인하고 약한 연결은 거절합니다. 단어 검사는 사실 전체를 증명하지 않으므로 원문도 확인하세요.',
     inputSchema:{type:'object',properties:{
       token:{type:'string',minLength:1,maxLength:6000},question:{type:'string',maxLength:300},
       answer:{type:'object',properties:{question_type:{type:'string',enum:[...QUESTION_TYPES]},paragraphs:{type:'array',minItems:1,maxItems:6,items:{type:'object',properties:{heading:{type:'string',maxLength:40},text:{type:'string',minLength:1,maxLength:600},evidence_ids:{type:'array',minItems:1,maxItems:14,items:{type:'string',maxLength:200}}},required:['heading','text','evidence_ids'],additionalProperties:false}},held:{type:'array',maxItems:4,items:{type:'string',maxLength:200}}},required:['question_type','paragraphs','held'],additionalProperties:false}
@@ -160,7 +160,7 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
         await logClientDocent(env.DB,{event:'validation',ms:Date.now()-started,ok:checked.omitted===0,records:scenes.length,type:checked.questionType,kept:checked.paragraphs.length,omitted:checked.omitted});
         const used=new Set(checked.paragraphs.flatMap(p=>p.evidenceIds));
         return textResult({...checked,sources:scenes.filter(s=>used.has(s.id)).map(sceneSource),dataSources:{bigQuery:bigQueryStatus},valid:checked.paragraphs.length>0&&checked.omitted===0,
-          verification:'mechanical_only',note:'근거 id·숫자·길이 검사입니다. 의미적 사실 일치와 장소 동일성은 별도로 확인해야 합니다.'});
+          verification:'mechanical_and_keyword_relevance',note:'근거 ID·출처 메타데이터·숫자·주제 단어·장소 범위를 검사합니다. 단어 일치만으로 역사적 사실 전체의 진실성이나 인과관계가 보증되지는 않으므로 원문을 확인하세요.'});
       }
       case 'search_place': {
         const input = searchInput.parse(args);
@@ -181,12 +181,12 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
           text: scene.text,
           scope: scene.scope,
           cutCount: scene.cutCount,
-          photos: scene.photos.slice(0, 1).map(photo => ({
-            previewUrl: photoResearchThumbnail(photo),
+          photos: scene.photos.filter(photo => mcpOriginalPhotoUrl(photo)&&scene.evidence.some(source=>source.url===photo.sourceUrl)).slice(0, 1).map(photo => ({
+            imageUrl: mcpOriginalPhotoUrl(photo),
             sourceUrl: photo.sourceUrl,
             provider: photo.provider,
             relation: photo.relation,
-            note: '이미지 이용조건과 장소 관계는 제공기관 원문을 확인해 주세요.',
+            note: '자료에 직접 연결된 이미지 URL입니다. 원문 제목·기관·장소 범위를 함께 확인하고, 해당 이미지가 확인되지 않으면 표시하지 마세요.',
           })),
           evidence: scene.evidence,
           placeRelation:scene.placeRelation,
@@ -228,7 +228,7 @@ async function execute(name: string, args: Record<string, unknown>): Promise<Mcp
         await logClientDocent(env.DB,{event:'retrieval',ms:Date.now()-startedAt,ok:packet.status==='ready',records:packet.neighborhood.selected,type:input.questionType});
         const videos=await getDocentVideoCandidates(address.sggNm,address.emdNm);
         const photos=packet.neighborhood.records.filter(record=>record.source.photo).slice(0,3).map(record=>({evidenceId:record.id,title:record.title,date:record.date,scope:record.scope,...record.source.photo!}));
-        return textResult({...packet,dataSources:{bigQuery:bigQueryStatus},videos,visuals:{photos,photoCount:photos.length,videoCount:videos.records.length,emptyNote:photos.length||videos.records.length?null:'주소에 연결된 표시 가능한 시각자료가 없습니다. 자료 없음으로 안내하세요.'},instructions:packet.instructions+'\n10) visuals.photos의 imageUrl이 있으면 사진을 Markdown 이미지로 직접 표시하고 시기·기관·원문·공간 범위를 붙이세요. 사진이 없으면 없다고 명시하세요. 관련 영상은 제목·원문 링크로 별도 안내하세요. 역사 서술의 검증 근거에는 neighborhood 기록 ID를 사용하세요. 원자료 시간과 독립 검증 상태를 구분하세요. verifiedSegments만 검증된 시간 링크이며 비어 있으면 playbackStatus의 재생구간 미검증을 명시하세요. 영상 후보를 입력 건물의 과거 모습으로 단정하지 마세요.'});
+        return textResult({...packet,dataSources:{bigQuery:bigQueryStatus},videos,visuals:{photos,photoCount:photos.length,videoCount:videos.records.length,emptyNote:photos.length||videos.records.length?null:'자료에 직접 연결된 사진 원문 URL이 없습니다. 이미지를 만들어 넣거나 다른 장소 사진으로 대체하지 마세요.'},instructions:packet.instructions+'\n10) visuals.photos에는 출처 자료에 직접 저장된 imageUrl만 있습니다. 그 URL과 같은 항목의 evidenceId·title·sourceUrl·scope가 함께 확인될 때만 사진을 표시하세요. 검색 결과, 다른 근거 ID, 같은 연도·동네의 사진이나 임의 이미지로 대체하지 마세요. 이 확인이 안 되면 사진을 표시하지 말고 원문 사진 미확보라고 하세요. 역사 서술의 근거 ID·제목·기관·원문 URL·공간 범위를 대조하고, 제목과 설명이 상충하는 자료는 인용하지 마세요. 원자료 시간과 독립 검증 상태를 구분하세요. verifiedSegments만 검증된 시간 링크이며 비어 있으면 playbackStatus의 재생구간 미검증을 명시하세요. 영상 후보를 입력 건물의 과거 모습으로 단정하지 마세요.'});
       }
       case 'get_answer_stats': {
         const input = z.object({days: z.number().int().min(1).max(365).default(30)}).strict().parse(args);

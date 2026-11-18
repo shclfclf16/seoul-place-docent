@@ -93,6 +93,14 @@ export function photoResearchImageCandidates(item: PhotoResearchItem) {
 export function photoResearchThumbnail(item: PhotoResearchItem) {
   return photoResearchImageCandidates(item)[0] || null;
 }
+/** MCP may expose only an image URL explicitly stored on this record. Do not manufacture
+ * a thumbnail URL from a source page or pick an image from a nearby search result. */
+export function mcpOriginalPhotoUrl(item: PhotoResearchItem) {
+  if (['사이트표시가능여부', '썸네일표시가능여부'].some(key => /^불가(?:$|[\s(（·:])/.test(item.values[key] || ''))) return null;
+  const url=photoResearchUrl(item.previewUrl||undefined);
+  if(!url||!url.startsWith('https://'))return null;
+  try{const parsed=new URL(url);return /\.(?:avif|gif|jpe?g|png|webp|tmb)$/i.test(parsed.pathname)||trustedImageHost(url)?parsed.href:null;}catch{return null;}
+}
 /** Accept the owner's review decision in presentation while retaining imported source data. */
 export function photoResearchText(value: string) {
   return value.replace(/\s*[·ㆍ|]\s*검토\s*대기/g, '').replace(/검토\s*대기/g, '').trim();
