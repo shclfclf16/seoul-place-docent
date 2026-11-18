@@ -1,5 +1,6 @@
 import type {BigQueryResult} from './records';
 import type {CatalogDiagnosticsResult} from './catalog-diagnostics';
+import type {ClassroomRecordsResult} from './classroom-records';
 import type {Address} from '@/lib/providers';
 
 /** The Sites bundle has no Node ADC or Vercel identity provider. */
@@ -9,6 +10,11 @@ export async function getBigQueryHistoricalRecords(): Promise<BigQueryResult> {
 
 /** Cloudflare's current runtime does not carry BigQuery credentials for admin diagnostics. */
 export async function getBigQueryCatalogDiagnostics(): Promise<CatalogDiagnosticsResult> {
+  return {status: 'disabled'};
+}
+
+/** Classroom candidate data is deliberately unavailable in the Cloudflare public runtime. */
+export async function getClassroomDemoRecords(): Promise<ClassroomRecordsResult> {
   return {status: 'disabled'};
 }
 

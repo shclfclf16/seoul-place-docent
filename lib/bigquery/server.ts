@@ -4,6 +4,7 @@ import {coordinates} from '@/lib/providers';
 import {env} from '@/lib/runtime-env';
 import {BigQueryAuthError, readHistoricalRecords} from './records';
 import {readBigQueryCatalogDiagnostics} from './catalog-diagnostics';
+import {readClassroomRecords} from './classroom-records';
 import {readVerifiedPlaceRecords, placeRecordsAsScenes} from './place-records';
 
 const scopes = ['https://www.googleapis.com/auth/cloud-platform'];
@@ -97,6 +98,11 @@ export function getBigQueryHistoricalRecords() {
 /** Admin-only route uses this read-only count diagnostic; it does not enable public place search. */
 export function getBigQueryCatalogDiagnostics() {
   return readBigQueryCatalogDiagnostics(process.env, {getToken: accessToken});
+}
+
+/** Preview-only, authenticated classroom metadata query; never used by public search or MCP. */
+export function getClassroomDemoRecords() {
+  return readClassroomRecords(process.env, {getToken: accessToken});
 }
 
 /** Public evidence search: rows are filtered by review and reuse status before leaving BigQuery. */
