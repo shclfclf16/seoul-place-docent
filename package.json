@@ -16,7 +16,7 @@
     "dev:vercel": "node scripts/pack-video-records.mjs && next dev",
     "start:vercel": "next start",
     "test": "node scripts/pack-video-records.mjs && node --experimental-transform-types --import ./tests/ts-resolver.mjs --test tests/*.test.mjs",
-    "typecheck": "node scripts/pack-video-records.mjs && tsc --noEmit --incremental false",
+    "typecheck": "node deploy/public-mcp/prepare-public-data.mjs && node scripts/pack-video-records.mjs && tsc --noEmit --incremental false",
     "bigquery:validate": "python scripts/bigquery/ingest.py",
     "test:bigquery-python": "python -m unittest discover -s tests -p test_bigquery_ingest.py",
     "build:mcp-public": "node scripts/build-public-mcp.mjs",
