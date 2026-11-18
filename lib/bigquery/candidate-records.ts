@@ -1,7 +1,7 @@
 /** Private metadata only. Never import this module into public evidence/MCP consumers. */
 export const V2_SNAPSHOT = '15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90';
 export const CANDIDATE_NOTICE = '미검토 후보 자료 — 원문·권리·장소·관계 확인 전이며 특정 건물의 직접 역사로 사용할 수 없습니다.';
-export type CandidateSearch = {institution:string;recordType:string;district:string;legalDong:string;placeName:string;title:string;page:number;pageSize:number};
+export type CandidateSearch = {institution:string;recordType:string;district:string;legalDong:string;placeName:string;title:string;recordId:string;linkRowNumber:string;page:number;pageSize:number};
 type Settings = Record<string,string|undefined>;
 type Deps = {getToken:(signal:AbortSignal)=>Promise<string>;fetch?:typeof fetch};
 type QueryResponse = {errors?:unknown[];jobComplete?:boolean;pageToken?:string;totalBytesProcessed?:string;totalBytesBilled?:string;cacheHit?:boolean;jobReference?:{jobId?:string};schema?:{fields?:{name:string}[]};rows?:{f:{v:unknown}[]}[]};
@@ -11,11 +11,11 @@ export function candidatePreviewEnabled(settings:Settings){
 }
 
 export function parseCandidateSearch(params:URLSearchParams):CandidateSearch {
-  const keys=['institution','recordType','district','legalDong','placeName','title','page','pageSize'];
+  const keys=['institution','recordType','district','legalDong','placeName','title','recordId','linkRowNumber','page','pageSize'];
   for(const key of params.keys())if(!keys.includes(key)||params.getAll(key).length!==1)throw new Error('CANDIDATE_INPUT_INVALID');
   const text=(key:string)=>{const value=(params.get(key)??'').trim();if(value.length>120||/[\u0000-\u001f\u007f]/.test(value))throw new Error('CANDIDATE_INPUT_INVALID');return value;};
   const integer=(key:string,fallback:number)=>{const raw=params.get(key);if(raw!==null&&!/^[1-9]\d{0,4}$/.test(raw))throw new Error('CANDIDATE_INPUT_INVALID');return raw===null?fallback:Number(raw);};
-  const result={institution:text('institution'),recordType:text('recordType'),district:text('district'),legalDong:text('legalDong'),placeName:text('placeName'),title:text('title'),page:integer('page',1),pageSize:integer('pageSize',25)};
+  const result={institution:text('institution'),recordType:text('recordType'),district:text('district'),legalDong:text('legalDong'),placeName:text('placeName'),title:text('title'),recordId:text('recordId'),linkRowNumber:text('linkRowNumber'),page:integer('page',1),pageSize:integer('pageSize',25)};
   if(result.pageSize>50||(result.page-1)*result.pageSize>10000)throw new Error('CANDIDATE_INPUT_INVALID');
   return result;
 }
@@ -30,13 +30,13 @@ export function candidateQuery(settings:Settings,input:CandidateSearch){
  SELECT l.*, COUNT(*) OVER (PARTITION BY record_id, place_id) AS duplicate_link_count
  FROM ${table('links')} l
 )
-SELECT r.record_id, r.record_title, r.record_type, r.created_year, r.subject_start_year,
+SELECT r.record_id, r.record_title, r.record_type, r.created_year, r.batch_sha256, r.row_sha256, r.input_row_number, r.rights_evidence_url, r.subject_start_year,
  r.subject_end_year, r.source_institution, r.source_url, r.review_status, r.rights_status,
  r.approved_for_public_use, r.image_review_status, r.playback_review_status,
  r.display_permission, r.thumbnail_permission, r.embed_permission, r.storage_permission, r.modification_permission,
- l.place_id, l.relation_type, l.link_review_status, l.approved_relation,
+ l.place_id, l.relation_type, l.link_review_status, l.approved_relation, l._batch_sha256 AS link_batch_sha256, l._row_sha256 AS link_row_sha256,
  l._input_row_number AS link_row_number, l.duplicate_link_count,
- p.place_name, p.district, p.legal_dong, p.location_review_status, p.approved_location,
+ p.place_name, p.district, p.legal_dong, p.location_review_status, p.approved_location, p._batch_sha256 AS place_batch_sha256, p._row_sha256 AS place_row_sha256, p.road_address, p.jibun_address, p.building_management_number, p.latitude_value, p.longitude_value,
  CASE WHEN l._input_row_number IS NULL THEN 'NO_LINK'
       WHEN l.place_id IS NULL OR l.place_id='' THEN 'EMPTY_PLACE_ID'
       WHEN p.place_id IS NULL THEN 'MISSING_PLACE'
@@ -51,10 +51,12 @@ WHERE (@institution='' OR STRPOS(LOWER(r.source_institution),LOWER(@institution)
  AND (@legalDong='' OR p.legal_dong=@legalDong)
  AND (@placeName='' OR STRPOS(LOWER(p.place_name),LOWER(@placeName))>0)
  AND (@title='' OR STRPOS(LOWER(r.record_title),LOWER(@title))>0)
+ AND (@recordId='' OR r.record_id=@recordId)
+ AND (@linkRowNumber='' OR CAST(COALESCE(l._input_row_number,0) AS STRING)=@linkRowNumber)
 ORDER BY r.record_id, COALESCE(l._input_row_number,0)
 LIMIT @limit OFFSET @offset`;
   const parameter=(name:string,value:string|number,type='STRING')=>({name,parameterType:{type},parameterValue:{value:String(value)}});
-  return {query,parameterMode:'NAMED',queryParameters:[...['institution','recordType','district','legalDong','placeName','title'].map(key=>parameter(key,checked[key as keyof CandidateSearch])),parameter('limit',checked.pageSize+1,'INT64'),parameter('offset',(checked.page-1)*checked.pageSize,'INT64')]};
+  return {query,parameterMode:'NAMED',queryParameters:[...['institution','recordType','district','legalDong','placeName','title','recordId','linkRowNumber'].map(key=>parameter(key,checked[key as keyof CandidateSearch])),parameter('limit',checked.pageSize+1,'INT64'),parameter('offset',(checked.page-1)*checked.pageSize,'INT64')]};
 }
 
 function safeSourceUrl(value:string){
@@ -75,7 +77,8 @@ export function candidateMetadata(row:Record<string,unknown>){
     year:year('created_year'),subjectStartYear:year('subject_start_year'),subjectEndYear:year('subject_end_year'),
     institution:str('source_institution'),sourceUrl:safeSourceUrl(str('source_url')),
     placeId:str('place_id'),placeName:str('place_name'),district:str('district'),legalDong:str('legal_dong'),
-    relationType:relation,relationScope,directConnection:false,approvedForPublicUse:false,
+    relationType:relation,relationScope,directConnection:false,approvedForPublicUse:false,integrity:{batchSha256:str('batch_sha256'),recordRowSha256:str('row_sha256'),placeRowSha256:str('place_row_sha256'),linkRowSha256:str('link_row_sha256'),placeBatchSha256:str('place_batch_sha256'),linkBatchSha256:str('link_batch_sha256'),recordInputRow:number('input_row_number'),linkInputRow:number('link_row_number')},
+    location:{roadAddress:str('road_address'),jibunAddress:str('jibun_address'),buildingManagementNumber:str('building_management_number'),latitude:row.latitude_value??null,longitude:row.longitude_value??null},
     review:{record:str('review_status'),rights:str('rights_status'),place:str('location_review_status'),relation:str('link_review_status'),image:str('image_review_status'),playback:str('playback_review_status')},
     diagnostics:{auditState:str('audit_state'),linkRowNumber:number('link_row_number'),duplicateLinkCount:number('duplicate_link_count'),emptyPlaceId:str('audit_state')==='EMPTY_PLACE_ID'},
     mediaPermissions:{display:permission('display_permission'),thumbnail:permission('thumbnail_permission'),embed:permission('embed_permission'),storage:permission('storage_permission'),modification:permission('modification_permission')},
