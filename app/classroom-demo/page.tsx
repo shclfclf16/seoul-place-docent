@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import type {FormEvent} from 'react';
 import type {ClassroomRecordsResult, ClassroomRecord} from '@/lib/bigquery/classroom-records';
 import './classroom-demo.css';
@@ -30,6 +30,11 @@ export default function ClassroomDemoPage() {
   const [result, setResult] = useState<Extract<ClassroomRecordsResult, {status: 'ok'}> | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const sessionTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (sessionTimeout.current) clearTimeout(sessionTimeout.current);
+  }, []);
 
   async function loadRecords() {
     const response = await fetch('/api/classroom-demo/records', {cache: 'no-store'});
@@ -47,10 +52,16 @@ export default function ClassroomDemoPage() {
         method: 'POST', cache: 'no-store', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({token}),
       });
-      const body = await response.json() as {error?: string};
+      const body = await response.json() as {error?: string; expiresInSeconds?: number};
       if (!response.ok) throw new Error(body.error || '수업용 인증에 실패했습니다.');
       setToken('');
       await loadRecords();
+      if (sessionTimeout.current) clearTimeout(sessionTimeout.current);
+      const expiresIn = Math.max(60, Math.min(body.expiresInSeconds ?? 14400, 14400));
+      sessionTimeout.current = setTimeout(() => {
+        void fetch('/api/classroom-demo/session', {method: 'DELETE', cache: 'no-store'});
+        setResult(null); setAuthenticated(false); setError('수업용 세션이 만료되어 화면을 잠갔습니다.');
+      }, expiresIn * 1000);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '수업용 자료를 불러오지 못했습니다.');
     } finally { setBusy(false); }
@@ -59,7 +70,11 @@ export default function ClassroomDemoPage() {
   async function signOut() {
     setBusy(true);
     try { await fetch('/api/classroom-demo/session', {method: 'DELETE', cache: 'no-store'}); }
-    finally { setResult(null); setAuthenticated(false); setToken(''); setError(''); setBusy(false); }
+    finally {
+      if (sessionTimeout.current) clearTimeout(sessionTimeout.current);
+      sessionTimeout.current = null;
+      setResult(null); setAuthenticated(false); setToken(''); setError(''); setBusy(false);
+    }
   }
 
   const danginPhoto = result?.records.find(record => record.recordId === 'DANGIN-C03');
