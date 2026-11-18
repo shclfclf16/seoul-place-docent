@@ -12,11 +12,11 @@ import {GET as photoGET} from '../app/api/archive/photo-research/route.ts';
 import {GET} from '../app/api/archive/integrated-research/route.ts';
 
 test('one final master supplies records while incremental files and exclusions remain audit evidence',()=>{
- assert.equal(additional.length,1562);assert.equal(bundle.items.length,5394);assert.equal(new Set(bundle.items.map(r=>r.id)).size,5394);
+ assert.equal(additional.length,1562);assert.equal(bundle.items.length,7468);assert.equal(new Set(bundle.items.map(r=>r.id)).size,7468);
  assert.equal(support.links.length,1703);assert.equal(support.targets.length,493);assert.equal(support.logs.length,3869);assert.equal(support.excluded.length,925);
  assert.equal(summary.incrementalRecordCount,1542);assert.equal(summary.changeCount,4389);assert.equal(summary.idChangeCount,11);
  assert.deepEqual(summary.mediaCounts,{'사진':1085,'도면':398,'지도':79});
- assert.equal(bundle.meta.visualRecordCount,5373);assert.equal(bundle.meta.buildingRecordCount,21);
+ assert.equal(bundle.meta.visualRecordCount,7447);assert.equal(bundle.meta.buildingRecordCount,21);
  const byId=new Map(bundle.items.map(r=>[r.id,r]));
  for(const old of legacy.items){const now=byId.get(old.id);assert.deepEqual(now.values,old.values);assert.equal(now.batchId,old.batchId);assert.equal(now.sourceUrl,old.sourceUrl);}
 });

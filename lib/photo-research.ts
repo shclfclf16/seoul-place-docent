@@ -69,8 +69,12 @@ export function trustedImageHost(url: string) {
 }
 export function photoResearchImageCandidates(item: PhotoResearchItem) {
   if (['사이트표시가능여부', '썸네일표시가능여부'].some(key => /^불가(?:$|[\s(（·:])/.test(item.values[key] || ''))) return [];
+  if (['사이트표시가능여부', '썸네일표시가능여부'].some(key => key in item.values && item.values[key] !== '가능')) return [];
   const images: string[] = [];
   const supplied = photoResearchUrl(item.previewUrl || undefined);
+  // A malformed or credential-bearing explicit image value is a rejection, not a cue to
+  // silently substitute another image derived from the source page.
+  if (item.previewUrl && !supplied) return [];
   if (supplied?.startsWith('https://') && (/\.(?:avif|gif|jpe?g|png|webp|tmb)$/i.test(new URL(supplied).pathname) || trustedImageHost(supplied))) images.push(supplied);
   const source = photoResearchUrl(item.sourceUrl || undefined);
   if (source) {

@@ -8,8 +8,8 @@ import {filterPhotoResearch, placePhotoResearch, photoResearchUrl} from '../lib/
 import {GET} from '../app/api/archive/photo-research/route.ts';
 
 test('fifty-six research batches preserve original downloadable bytes and district versus dong scope',()=>{
- assert.equal(bundle.items.length,3832);assert.equal(bundle.meta.recordCount,3832);assert.equal(new Set(bundle.items.map(r=>r.id)).size,3832);
- assert.equal(bundle.meta.files.length,56);assert.equal(bundle.meta.dongCount,52);assert.equal(bundle.meta.districtBatchCount,4);
+ assert.equal(bundle.items.length,5319);assert.equal(bundle.meta.recordCount,5319);assert.equal(new Set(bundle.items.map(r=>r.id)).size,5319);
+ assert.equal(bundle.meta.files.length,58);assert.equal(bundle.meta.dongCount,52);assert.equal(bundle.meta.districtBatchCount,6);
  assert.deepEqual(bundle.meta.files.filter(f=>f.collectionScope==='dong'&&!f.id.startsWith('NOWON-')).map(f=>f.count),[24,62,20,20,20,55,48,46,71,26,37,37,21,24,35,20,62,64,33,40,21,2,24,21,20,18,21,17,20,20,23,20,12,9,20,21,39,41,20,22,64,61,24,39,27,55,20]);
  for(const file of bundle.meta.files){
   const bytes=readFileSync(new URL('../public'+file.path,import.meta.url));
@@ -21,8 +21,8 @@ test('fifty-six research batches preserve original downloadable bytes and distri
 });
 
 test('accessibility, review and reproduction permissions are independent original fields',()=>{
- assert.equal(bundle.meta.candidateCount,177);assert.equal(bundle.meta.accessUnavailableCount,206);assert.equal(bundle.meta.downloadedPhotoCount,0);
- assert.equal(bundle.meta.previewLinkCount,1027);assert.equal(bundle.meta.missingSourceUrlCount,15);
+ assert.equal(bundle.meta.candidateCount,1177);assert.equal(bundle.meta.accessUnavailableCount,206);assert.equal(bundle.meta.downloadedPhotoCount,0);
+ assert.equal(bundle.meta.previewLinkCount,1358);assert.equal(bundle.meta.missingSourceUrlCount,15);
  for(const row of bundle.items){
   assert.equal(row.reviewStatus,row.values['검토상태']);assert.equal(row.relation,row.values['주소관계상태']||'미확인');assert.equal(row.scope,row.values['공간범위']);
   assert.ok(!('verifiedBuilding' in row));assert.ok(!('authorizedThumbnail' in row));
@@ -38,7 +38,7 @@ test('annotated search URLs are separated from source notes without inventing de
  assert.equal(photoResearchUrl(row.values['원문URL']),row.sourceUrl);
  assert.equal(photoResearchUrl('javascript:alert(1)'),null);assert.equal(photoResearchUrl('https://username:password@example.test/photo'),null);
  assert.equal(photoResearchUrl('미확인'),null);
- assert.equal(bundle.meta.sourceUrlCount,987);assert.equal(new Set(bundle.items.filter(r=>r.sourceUrl).map(r=>r.sourceUrl)).size,987);
+ assert.equal(bundle.meta.sourceUrlCount,2077);assert.equal(new Set(bundle.items.filter(r=>r.sourceUrl).map(r=>r.sourceUrl)).size,2077);
 });
 
 test('shared source pages and repeated preview URLs keep distinct research row identities',()=>{
@@ -55,19 +55,19 @@ test('combined neighborhood and candidate filters match their supplied scope rat
  assert.ok(rows.length>0);assert.ok(rows.every(r=>r.dong==='북아현동'&&r.candidate));
  assert.equal(filterPhotoResearch(bundle,{district:'은평구',batch:'BUKAHYEONDONG-SEODAEMUNGU-001'}).length,0);
  assert.equal(filterPhotoResearch(bundle,{query:'존재하지않는사진조사xyz'}).length,0);
- const preview=filterPhotoResearch(bundle,{previewOnly:true});assert.equal(preview.length,1027);assert.ok(preview.every(r=>r.previewUrl));
+ const preview=filterPhotoResearch(bundle,{previewOnly:true});assert.equal(preview.length,1358);assert.ok(preview.every(r=>r.previewUrl));
  const result=placePhotoResearch(bundle,'서대문구',['북아현동']);assert.equal(result.total,62);assert.ok(result.eligible>0);assert.ok(result.rows.length<=4);assert.ok(result.rows.every(r=>r.dong==='북아현동'&&!r.candidate&&r.relation!=='미확인'));
  assert.equal(placePhotoResearch(bundle,'은평구',['북아현동']).total,0);assert.equal(placePhotoResearch(bundle,'성동구',['성수동1가']).total,0);
 });
 
 test('photo API paginates, validates batch IDs, and exports complete filtered original data',async()=>{
  const query=p=>GET(new Request('https://example.test/api/archive/photo-research?'+p));
- const page=await query('page=2').json();assert.equal(page.total,5394);assert.equal(page.rows.length,20);assert.equal(page.page,2);
- const last=await query('page=99999').json();assert.equal(last.page,270);assert.equal(last.rows.length,14);
+ const page=await query('page=2').json();assert.equal(page.total,7468);assert.equal(page.rows.length,20);assert.equal(page.page,2);
+ const last=await query('page=99999').json();assert.equal(last.page,374);assert.equal(last.rows.length,8);
  assert.equal(query('batch=missing').status,400);
  const response=query('district='+encodeURIComponent('은평구')+'&download=1');assert.match(response.headers.get('cache-control'),/private/);assert.match(response.headers.get('content-disposition'),/^attachment;/);
- const download=await response.json();assert.equal(download.total,352);assert.equal(download.rows.length,352);assert.equal(download.provenance.id,bundle.meta.id);assert.ok(download.rows.every(r=>r.values['자치구']==='은평구'||r.regionLinks?.some(link=>link['자치구']==='은평구')));
- const candidate=await query('review=candidate').json();assert.equal(candidate.total,177);
+ const download=await response.json();assert.equal(download.total,372);assert.equal(download.rows.length,372);assert.equal(download.provenance.id,bundle.meta.id);assert.ok(download.rows.every(r=>r.values['자치구']==='은평구'||r.regionLinks?.some(link=>link['자치구']==='은평구')));
+ const candidate=await query('review=candidate').json();assert.equal(candidate.total,1314);
  const place=await query('mode=place&district='+encodeURIComponent('서대문구')+'&dong='+encodeURIComponent('북아현동')).json();assert.equal(place.total,62);
 });
 
@@ -83,7 +83,7 @@ test('district cumulative files retain missing sequence notices and stay separat
  }
  const ydp=bundle.meta.files.find(f=>f.id==='YDP-HIST-001');assert.match(ydp.sourceNote,/P001~P516/);assert.ok(!bundle.items.some(r=>r.id==='YDP-HIST-001-P001'));
  const jongno=bundle.items.find(r=>r.id==='JNR-HIST-001-P001');assert.equal(jongno.sourceLinkType,'collection');assert.equal(jongno.values['기관자료ID'],'2016012504');assert.equal(jongno.mediaType,'사진(현재 모습)');assert.equal(jongno.values['원본보관가능여부'],'불가');assert.equal(jongno.previewUrl,null);
- assert.equal(bundle.meta.visualRecordCount,3811);assert.equal(bundle.meta.buildingRecordCount,21);
+ assert.equal(bundle.meta.visualRecordCount,5298);assert.equal(bundle.meta.buildingRecordCount,21);
 });
 
 test('building correction rows preserve original IDs and facts while type and media filters export independently',async()=>{
@@ -91,7 +91,7 @@ test('building correction rows preserve original IDs and facts while type and me
  assert.equal(correction.correctionOf,original.id);assert.deepEqual(original.correctionIds,[correction.id]);assert.equal(correction.values['자료ID'],'BLDG-004 정정');assert.notEqual(original.values['내용설명'],correction.values['내용설명']);
  assert.equal(bundle.meta.correctionCount,1);assert.equal(filterPhotoResearch(bundle,{recordType:'building'}).length,21);
  assert.ok(filterPhotoResearch(bundle,{recordType:'building'}).every(r=>r.recordType==='building'&&r.relation==='미확인'));
- const current=filterPhotoResearch(bundle,{mediaType:'사진(현재 모습)'});assert.equal(current.length,2243);assert.ok(current.every(r=>r.values['매체유형']==='사진(현재 모습)'));
+ const current=filterPhotoResearch(bundle,{mediaType:'사진(현재 모습)'});assert.equal(current.length,2268);assert.ok(current.every(r=>r.values['매체유형']==='사진(현재 모습)'));
  const download=await GET(new Request('https://example.test/api/archive/photo-research?type=building&batch=YDP-HIST-001&download=1')).json();assert.equal(download.total,21);assert.equal(download.rows.length,21);assert.equal(download.filters.recordType,'building');
  const media=await GET(new Request('https://example.test/api/archive/photo-research?media='+encodeURIComponent('사진(현재 모습)'))).json();assert.equal(media.total,current.length);
 });
@@ -116,7 +116,7 @@ test('Nowon shares one unmodified CSV across five dong batches and preserves com
  assert.deepEqual(rows.map(row=>row.dataRow).sort((a,b)=>a-b),Array.from({length:79},(_,i)=>i+1));
  const files=bundle.meta.files.filter(file=>file.id.startsWith('NOWON-'));
  assert.equal(new Set(files.map(file=>file.path)).size,1);assert.equal(new Set(files.map(file=>file.sha256)).size,1);
- assert.equal(new Set(bundle.meta.files.map(file=>file.path)).size,52);
+ assert.equal(new Set(bundle.meta.files.map(file=>file.path)).size,54);
  for(const [dong,count] of expected){
   const batch='NOWON-'+dong+'-001', file=files.find(file=>file.id===batch);
   assert.equal(file.count,count);assert.equal(file.sourceFileRecordCount,79);assert.equal(file.headerLine,1);
