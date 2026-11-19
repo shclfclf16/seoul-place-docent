@@ -1,7 +1,7 @@
 /** Private metadata only. Never import this module into public evidence/MCP consumers. */
 export const V2_SNAPSHOT = '15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90';
 export const CANDIDATE_NOTICE = '미검토 후보 자료 — 원문·권리·장소·관계 확인 전이며 특정 건물의 직접 역사로 사용할 수 없습니다.';
-export type CandidateSearch = {institution:string;recordType:string;district:string;legalDong:string;placeName:string;title:string;recordId:string;linkRowNumber:string;page:number;pageSize:number};
+export type CandidateSearch = {institution:string;recordType:string;district:string;legalDong:string;placeName:string;title:string;recordId:string;linkRowNumber:string;year?:string;page:number;pageSize:number};
 type Settings = Record<string,string|undefined>;
 type Deps = {getToken:(signal:AbortSignal)=>Promise<string>;fetch?:typeof fetch};
 type QueryResponse = {errors?:unknown[];jobComplete?:boolean;pageToken?:string;totalBytesProcessed?:string;totalBytesBilled?:string;cacheHit?:boolean;jobReference?:{jobId?:string};schema?:{fields?:{name:string}[]};rows?:{f:{v:unknown}[]}[]};
@@ -11,11 +11,12 @@ export function candidatePreviewEnabled(settings:Settings){
 }
 
 export function parseCandidateSearch(params:URLSearchParams):CandidateSearch {
-  const keys=['institution','recordType','district','legalDong','placeName','title','recordId','linkRowNumber','page','pageSize'];
+  const keys=['institution','recordType','district','legalDong','placeName','title','recordId','linkRowNumber','year','page','pageSize'];
   for(const key of params.keys())if(!keys.includes(key)||params.getAll(key).length!==1)throw new Error('CANDIDATE_INPUT_INVALID');
   const text=(key:string)=>{const value=(params.get(key)??'').trim();if(value.length>120||/[\u0000-\u001f\u007f]/.test(value))throw new Error('CANDIDATE_INPUT_INVALID');return value;};
   const integer=(key:string,fallback:number)=>{const raw=params.get(key);if(raw!==null&&!/^[1-9]\d{0,4}$/.test(raw))throw new Error('CANDIDATE_INPUT_INVALID');return raw===null?fallback:Number(raw);};
-  const result={institution:text('institution'),recordType:text('recordType'),district:text('district'),legalDong:text('legalDong'),placeName:text('placeName'),title:text('title'),recordId:text('recordId'),linkRowNumber:text('linkRowNumber'),page:integer('page',1),pageSize:integer('pageSize',25)};
+  const result={institution:text('institution'),recordType:text('recordType'),district:text('district'),legalDong:text('legalDong'),placeName:text('placeName'),title:text('title'),recordId:text('recordId'),linkRowNumber:text('linkRowNumber'),year:text('year'),page:integer('page',1),pageSize:integer('pageSize',25)};
+  if(result.year&&!/^[1-9]\d{0,3}$/.test(result.year))throw new Error('CANDIDATE_INPUT_INVALID');
   if(result.pageSize>50||(result.page-1)*result.pageSize>10000)throw new Error('CANDIDATE_INPUT_INVALID');
   return result;
 }
@@ -51,12 +52,13 @@ WHERE (@institution='' OR STRPOS(LOWER(r.source_institution),LOWER(@institution)
  AND (@legalDong='' OR p.legal_dong=@legalDong)
  AND (@placeName='' OR STRPOS(LOWER(p.place_name),LOWER(@placeName))>0)
  AND (@title='' OR STRPOS(LOWER(r.record_title),LOWER(@title))>0)
+ AND (@year='' OR CAST(r.created_year AS STRING)=@year)
  AND (@recordId='' OR r.record_id=@recordId)
  AND (@linkRowNumber='' OR CAST(COALESCE(l._input_row_number,0) AS STRING)=@linkRowNumber)
 ORDER BY r.record_id, COALESCE(l._input_row_number,0)
 LIMIT @limit OFFSET @offset`;
   const parameter=(name:string,value:string|number,type='STRING')=>({name,parameterType:{type},parameterValue:{value:String(value)}});
-  return {query,parameterMode:'NAMED',queryParameters:[...['institution','recordType','district','legalDong','placeName','title','recordId','linkRowNumber'].map(key=>parameter(key,checked[key as keyof CandidateSearch])),parameter('limit',checked.pageSize+1,'INT64'),parameter('offset',(checked.page-1)*checked.pageSize,'INT64')]};
+  return {query,parameterMode:'NAMED',queryParameters:[...['institution','recordType','district','legalDong','placeName','title','recordId','linkRowNumber','year'].map(key=>parameter(key,checked[key as keyof CandidateSearch]??'')),parameter('limit',checked.pageSize+1,'INT64'),parameter('offset',(checked.page-1)*checked.pageSize,'INT64')]};
 }
 
 function safeSourceUrl(value:string){
