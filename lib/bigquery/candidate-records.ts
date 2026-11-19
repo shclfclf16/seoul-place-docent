@@ -21,11 +21,14 @@ export function parseCandidateSearch(params:URLSearchParams):CandidateSearch {
   return result;
 }
 
-export function candidateQuery(settings:Settings,input:CandidateSearch){
+export type CandidateTarget={recordId:string;linkRowNumber:number};
+export function candidateQuery(settings:Settings,input:CandidateSearch,targets?:CandidateTarget[]){
   const project=settings.BIGQUERY_PROJECT_ID??'',dataset=settings.BIGQUERY_DATASET_ID??'';
   if(!/^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(project)||!/^\w{1,1024}$/.test(dataset))throw new Error('BIGQUERY_CONFIG_INVALID');
   // Revalidate service inputs too, not only HTTP inputs.
   const checked=parseCandidateSearch(new URLSearchParams(Object.entries(input).map(([k,v])=>[k,String(v)])));
+  if(targets&&(!targets.length||targets.length>20||targets.some(t=>!t.recordId||t.recordId.length>120||!Number.isSafeInteger(t.linkRowNumber)||t.linkRowNumber<1||t.linkRowNumber>200000)))throw Error('CANDIDATE_INPUT_INVALID');
+  const targetFilter=targets?' AND ('+targets.map((_,i)=>`(r.record_id=@targetRecord${i} AND l._input_row_number=@targetRow${i})`).join(' OR ')+')':'';
   const table=(kind:string)=>'`'+`${project}.${dataset}.v2_${kind}_${V2_SNAPSHOT}`+'`';
   const query=`WITH links AS (
  SELECT l.*, COUNT(*) OVER (PARTITION BY record_id, place_id) AS duplicate_link_count
@@ -55,10 +58,11 @@ WHERE (@institution='' OR STRPOS(LOWER(r.source_institution),LOWER(@institution)
  AND (@year='' OR CAST(r.created_year AS STRING)=@year)
  AND (@recordId='' OR r.record_id=@recordId)
  AND (@linkRowNumber='' OR CAST(COALESCE(l._input_row_number,0) AS STRING)=@linkRowNumber)
+${targetFilter}
 ORDER BY r.record_id, COALESCE(l._input_row_number,0)
 LIMIT @limit OFFSET @offset`;
   const parameter=(name:string,value:string|number,type='STRING')=>({name,parameterType:{type},parameterValue:{value:String(value)}});
-  return {query,parameterMode:'NAMED',queryParameters:[...['institution','recordType','district','legalDong','placeName','title','recordId','linkRowNumber','year'].map(key=>parameter(key,checked[key as keyof CandidateSearch]??'')),parameter('limit',checked.pageSize+1,'INT64'),parameter('offset',(checked.page-1)*checked.pageSize,'INT64')]};
+  return {query,parameterMode:'NAMED',queryParameters:[...['institution','recordType','district','legalDong','placeName','title','recordId','linkRowNumber','year'].map(key=>parameter(key,checked[key as keyof CandidateSearch]??'')),...(targets??[]).flatMap((t,i)=>[parameter(`targetRecord${i}`,t.recordId),parameter(`targetRow${i}`,t.linkRowNumber,'INT64')]),parameter('limit',checked.pageSize+1,'INT64'),parameter('offset',(checked.page-1)*checked.pageSize,'INT64')]};
 }
 
 function safeSourceUrl(value:string){
@@ -91,7 +95,7 @@ export type CandidateResult = {status:'disabled'} | {status:'unavailable';code:s
   budget:{estimatedBytes:string;processedBytes:string|null;billedBytes:string|null;maximumBytesBilled:string;jobId:string|null;cacheHit:boolean};
 };
 
-export async function readCandidateRecords(settings:Settings,input:CandidateSearch,deps:Deps):Promise<CandidateResult>{
+export async function readCandidateRecords(settings:Settings,input:CandidateSearch,deps:Deps,targets?:CandidateTarget[]):Promise<CandidateResult>{
   if(!candidatePreviewEnabled(settings))return {status:'disabled'};
   const byteCap=settings.BIGQUERY_V2_MAX_BYTES_BILLED??'100000000';
   const location=settings.BIGQUERY_LOCATION??'asia-northeast3';
@@ -99,7 +103,7 @@ export async function readCandidateRecords(settings:Settings,input:CandidateSear
   const controller=new AbortController();let timer:ReturnType<typeof setTimeout>|undefined;
   const deadline=new Promise<never>((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(new Error('BIGQUERY_TIMEOUT'));},12000);});
   async function run():Promise<CandidateResult>{
-    const query=candidateQuery(settings,input);
+    const query=candidateQuery(settings,input,targets);
     const token=await deps.getToken(controller.signal).catch(()=>{throw new Error('BIGQUERY_AUTH_FAILED');});
     if(!token)throw new Error('BIGQUERY_AUTH_FAILED');
     controller.signal.throwIfAborted();

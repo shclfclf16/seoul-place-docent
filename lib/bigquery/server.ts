@@ -119,3 +119,10 @@ export async function getBigQueryPlaceHistory(address:Address) {
 export function getBigQueryCandidateRecords(input:CandidateSearch) {
   return readCandidateRecords(process.env,input,{getToken:accessToken});
 }
+
+/** Private approval validation only: one bounded query for up to 20 exact CSV link rows. */
+export function getBigQueryApprovalCandidates(targets:import('./candidate-records').CandidateTarget[]){
+  const cap=process.env.BIGQUERY_V2_MAX_BYTES_BILLED??'100000000';
+  const settings={...process.env,BIGQUERY_V2_MAX_BYTES_BILLED:/^[1-9]\d{0,9}$/.test(cap)&&BigInt(cap)>BigInt('100000000')?'100000000':cap};
+  return readCandidateRecords(settings,{institution:'',recordType:'',district:'',legalDong:'',placeName:'',title:'',recordId:'',linkRowNumber:'',page:1,pageSize:Math.max(1,targets.length)}, {getToken:accessToken},targets);
+}
