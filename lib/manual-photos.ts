@@ -5,6 +5,10 @@ import {trustedImageHost,type PhotoResearchItem} from './photo-research';
  */
 export type ManualPhoto={district:string;dong?:string;title:string;date?:string;imageUrl:string;sourceUrl:string;institution:string;credit?:string;license:string;description?:string;allowDisplay?:boolean};
 const https=(v:unknown)=>{if(typeof v!=='string')return null;try{const u=new URL(v);return u.protocol==='https:'&&!u.username&&!u.password?u.href:null;}catch{return null;}};
+/** This museum item has contradictory source metadata: its title names Byeonsan Peninsula,
+ * while the description is about the Majang-dong food alley. Keep it out until corrected
+ * against the museum's original record; never infer which field is right. */
+const CONFLICTING_MUSEUM_FILE_IDS=new Set(['H-TRNS-55104-375']);
 export function manualPhotoItems(entries:unknown,prefix='manual'):PhotoResearchItem[]{
  if(!Array.isArray(entries))return [];
  const out:PhotoResearchItem[]=[];
@@ -13,6 +17,7 @@ export function manualPhotoItems(entries:unknown,prefix='manual'):PhotoResearchI
   const image=https(e.imageUrl),source=https(e.sourceUrl);
   const text=(v:unknown)=>typeof v==='string'?v.trim():'';
   if(!image||!source||!text(e.district)||!text(e.title)||!text(e.license)||!text(e.institution))return;
+  try{const u=new URL(source);if(u.hostname==='museum.seoul.go.kr'&&CONFLICTING_MUSEUM_FILE_IDS.has(u.searchParams.get('fileId')||''))return;}catch{return;}
   if(!/\.(?:avif|gif|jpe?g|png|webp|tmb)$/i.test(new URL(image).pathname)&&!trustedImageHost(image))return;
   const dong=text(e.dong);
   out.push({id:prefix+'-'+index,batchId:prefix,district:text(e.district),dong,dataRow:index+1,collectionScope:dong?'dong':'district',recordType:'visual',mediaType:'사진',correctionOf:null,correctionIds:[],

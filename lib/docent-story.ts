@@ -2,7 +2,7 @@ import {photoResearchThumbnail, photoResearchText, type PhotoResearchBundle, typ
 import {documentContext, safeDocumentUrl, type DocumentBundle} from './document-research';
 import {matchRegions, sources} from './history';
 export type StoryEvidence = {title:string;url:string|null;institution:string;locator?:string;note?:string};
-export type StoryScene = {id:string;kind:'photo'|'document';date:string;year:number|null;order:number;title:string;text:string;scope:'dong'|'district';photos:PhotoResearchItem[];cutCount:number;evidence:StoryEvidence[]};
+export type StoryScene = {id:string;kind:'photo'|'document';date:string;year:number|null;order:number;title:string;text:string;scope:'place'|'dong'|'district';placeRelation?:'EXACT_SITE'|'NEARBY'|'DISTRICT_CONTEXT';photos:PhotoResearchItem[];cutCount:number;evidence:StoryEvidence[]};
 export type DocentStory = {district:string;dong:string;scenes:StoryScene[];total:number;photoRecords:number;photoGroups:number;unpictured:number;version:string};
 /** Presentation only: original claims and evidence IDs remain in the downloadable archive. */
 export function readingText(value:string, maxSentences=3) {

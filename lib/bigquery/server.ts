@@ -1,5 +1,12 @@
+import {readCandidateRecords, type CandidateSearch} from './candidate-records';
 import type {GoogleAuth} from 'google-auth-library';
+import type {Address} from '@/lib/providers';
+import {coordinates} from '@/lib/providers';
+import {env} from '@/lib/runtime-env';
 import {BigQueryAuthError, readHistoricalRecords} from './records';
+import {readBigQueryCatalogDiagnostics} from './catalog-diagnostics';
+import {readClassroomRecords} from './classroom-records';
+import {readVerifiedPlaceRecords, placeRecordsAsScenes} from './place-records';
 
 const scopes = ['https://www.googleapis.com/auth/cloud-platform'];
 let adc: GoogleAuth | undefined;
@@ -87,4 +94,35 @@ export async function exchangeVercelCredentials(
 /** Node server only. Future evidence consumers can use the same result contract. */
 export function getBigQueryHistoricalRecords() {
   return readHistoricalRecords(process.env, {getToken: accessToken});
+}
+
+/** Admin-only route uses this read-only count diagnostic; it does not enable public place search. */
+export function getBigQueryCatalogDiagnostics() {
+  return readBigQueryCatalogDiagnostics(process.env, {getToken: accessToken});
+}
+
+/** Preview-only, authenticated classroom metadata query; never used by public search or MCP. */
+export function getClassroomDemoRecords() {
+  return readClassroomRecords(process.env, {getToken: accessToken});
+}
+
+/** Public evidence search: rows are filtered by review and reuse status before leaving BigQuery. */
+export async function getBigQueryPlaceHistory(address:Address) {
+  if(process.env.BIGQUERY_PLACE_SEARCH_ENABLED!=='true')return {status:'disabled' as const,records:[],scenes:[]};
+  let point:{x:number;y:number}|undefined;
+  try{const found=await coordinates(address,env);if(found.status==='verified'&&typeof found.x==='number'&&typeof found.y==='number')point={x:found.x,y:found.y};}catch{/* Exact address matching still works without a verified nearby coordinate. */}
+  const result=await readVerifiedPlaceRecords(process.env,{address,point},{getToken:accessToken});
+  return {status:result.status,records:result.status==='ok'?result.records:[],scenes:result.status==='ok'?placeRecordsAsScenes(result.records):[],...(result.status==='ok'?{location:result.location}:{})};
+}
+
+/** Private Preview admin metadata only; never called by public search or MCP. */
+export function getBigQueryCandidateRecords(input:CandidateSearch) {
+  return readCandidateRecords(process.env,input,{getToken:accessToken});
+}
+
+/** Private approval validation only: one bounded query for up to 20 exact CSV link rows. */
+export function getBigQueryApprovalCandidates(targets:import('./candidate-records').CandidateTarget[]){
+  const cap=process.env.BIGQUERY_V2_MAX_BYTES_BILLED??'100000000';
+  const settings={...process.env,BIGQUERY_V2_MAX_BYTES_BILLED:/^[1-9]\d{0,9}$/.test(cap)&&BigInt(cap)>BigInt('100000000')?'100000000':cap};
+  return readCandidateRecords(settings,{institution:'',recordType:'',district:'',legalDong:'',placeName:'',title:'',recordId:'',linkRowNumber:'',page:1,pageSize:Math.max(1,targets.length)}, {getToken:accessToken},targets);
 }

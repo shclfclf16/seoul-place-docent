@@ -16,5 +16,6 @@ jobs:
       - uses: pnpm/action-setup@v4
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build:mcp-public:vercel
+      - run: node scripts/pack-video-records.mjs
       - run: node --experimental-transform-types --import ./tests/ts-resolver.mjs --test tests/public-mcp.test.mjs tests/public-mcp-package.integration.mjs tests/public-mcp-node.integration.mjs tests/mcp-audit-remote.test.mjs tests/mcp-http-audit.test.mjs tests/mcp-protocol.test.mjs tests/place-answer.test.mjs
       - run: pnpm run typecheck

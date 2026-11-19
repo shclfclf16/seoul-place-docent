@@ -21,14 +21,15 @@ test('only exact configured HTTPS origins get a CORS response',async()=>{
   assert.deepEqual(configuredMcpOrigins('*,null,http://bad.test,https://good.test/path,https://good.test,https://good.test'),['https://good.test']);
  }finally{if(previous===undefined)delete process.env.MCP_ALLOWED_ORIGINS;else process.env.MCP_ALLOWED_ORIGINS=previous;}
 });
-test('health signals a missing address key and does not expose secrets',async()=>{
- const before=process.env.JUSO_API_KEY;
+test('health signals missing token-signing configuration and does not expose secrets',async()=>{
+ const before=process.env.MCP_ADDRESS_SIGNING_SECRET;
  try{
-  delete process.env.JUSO_API_KEY;assert.equal((await app.fetch(new Request('https://public.test/health'))).status,503);
-  process.env.JUSO_API_KEY='SECRET_TEST_VALUE';
+  delete process.env.MCP_ADDRESS_SIGNING_SECRET;assert.equal((await app.fetch(new Request('https://public.test/health'))).status,503);
+  process.env.MCP_ADDRESS_SIGNING_SECRET='SECRET_TEST_VALUE';
   const response=await app.fetch(new Request('https://public.test/api/public-mcp?__route=health'));assert.equal(response.status,200);
-  const text=await response.text();assert.match(text,/"auth":"none"/);assert.doesNotMatch(text,/SECRET_TEST_VALUE/);
- }finally{if(before===undefined)delete process.env.JUSO_API_KEY;else process.env.JUSO_API_KEY=before;}
+  const body=await response.json();assert.equal(body.bigQueryPlaceSearch,false);assert.equal(body.auth,'none');
+  assert.doesNotMatch(JSON.stringify(body),/SECRET_TEST_VALUE/);
+ }finally{if(before===undefined)delete process.env.MCP_ADDRESS_SIGNING_SECRET;else process.env.MCP_ADDRESS_SIGNING_SECRET=before;}
 });
 
 test('homepage never advertises a Sites URL or token URL as a public unauthenticated MCP',async()=>{

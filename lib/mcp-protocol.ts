@@ -42,7 +42,7 @@ export async function handleMcpMessage(value: unknown, tools: readonly McpTool[]
       result = {
         supportedVersions: MCP_SUPPORTED_VERSIONS,
         _meta: {'io.modelcontextprotocol/serverInfo': {name: 'seoul-place-docent', version: '2.0.0'}},
-        instructions: '원본 사진은 extract_photo_location으로 실제 EXIF GPS를 읽고 주소 후보를 확인하세요. 파일이 전달되지 않거나 GPS가 없으면 웹 원본 선택·주소 입력을 안내하고 외관으로 위치를 추측하지 마세요. 주소 입력은 search_place로 조회하고 복수 후보는 사용자가 선택하게 하세요. prepare_place_answer로 근거를 받은 뒤 호출한 AI가 사진·영상·출처와 시기를 붙여 최종 해설을 작성하세요. 같은 token·question으로 validate_place_answer를 호출할 수 있습니다. 건물과 동네 역사를 구분하고 미확인 사항을 표시하세요. 서버는 모델 API를 호출하지 않습니다.',
+        instructions: '원본 사진은 extract_photo_location으로 실제 EXIF GPS를 읽고 주소 후보를 확인하세요. 파일이 전달되지 않거나 GPS가 없으면 웹 원본 선택·주소 입력을 안내하고 외관으로 위치를 추측하지 마세요. 주소 입력은 search_place로 조회하고 복수 후보는 사용자가 선택하게 하세요. prepare_place_answer로 근거를 받은 뒤 제목·기관·원문 링크·공간 범위가 주장과 맞는지 확인해 최종 해설을 작성하세요. 사진은 같은 근거 자료에 직접 연결된 imageUrl만 사용하고, 다른 사진이나 임의 이미지로 대체하지 마세요. 같은 token·question으로 validate_place_answer를 호출할 수 있습니다. 건물과 동네 역사를 구분하고 미확인 사항을 표시하세요. 서버는 모델 API를 호출하지 않습니다.',
         capabilities: {tools: {}},
         serverInfo: {name: 'seoul-place-docent', version: '2.0.0'},
       };
@@ -53,7 +53,7 @@ export async function handleMcpMessage(value: unknown, tools: readonly McpTool[]
       const negotiated = MCP_SUPPORTED_VERSIONS.includes(params.protocolVersion) ? params.protocolVersion : MCP_LEGACY_VERSIONS[0];
       result = {
         protocolVersion: negotiated,
-        instructions: '원본 사진 첨부는 extract_photo_location으로 EXIF GPS를 읽으세요. 파일이 전달되지 않거나 GPS가 없으면 웹에서 원본 선택 또는 주소·실제 GPS 공유를 안내하고 외관으로 위치를 추측하지 마세요. 주소 후보를 사용자에게 확인한 다음 prepare_place_answer로 근거를 조회하고 호출한 AI가 사진·영상·출처와 함께 최종 도슨트를 작성하세요. 서버는 모델 API를 호출하지 않습니다.',
+        instructions: '원본 사진 첨부는 extract_photo_location으로 EXIF GPS를 읽으세요. 파일이 전달되지 않거나 GPS가 없으면 웹에서 원본 선택 또는 주소·실제 GPS 공유를 안내하고 외관으로 위치를 추측하지 마세요. 주소 후보를 사용자에게 확인한 다음 prepare_place_answer로 근거를 조회하고 호출한 AI가 제목·기관·원문 링크·공간 범위가 맞는 자료만 사용해 최종 도슨트를 작성하세요. 사진은 같은 근거 자료에 직접 연결된 imageUrl만 사용하고, 다른 사진이나 임의 이미지로 대체하지 마세요. 서버는 모델 API를 호출하지 않습니다.',
         capabilities: {tools: {}},
         serverInfo: {name: 'seoul-place-docent', version: '2.0.0'},
       };

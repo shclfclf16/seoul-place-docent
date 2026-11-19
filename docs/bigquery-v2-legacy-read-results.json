@@ -1,0 +1,273 @@
+{
+  "mode": "READ_ONLY",
+  "legacy_hash_tables": true,
+  "budget_bytes": 750000000,
+  "dataset_location": "asia-northeast3",
+  "tables": {
+    "documents": {
+      "exists": true,
+      "table_id": "seoul-place-docent-514906.seoul_history.rawv2_documents_15dcc4c58945",
+      "metadata_rows": 1336,
+      "bytes": 9294140,
+      "table_type": "TABLE",
+      "schema_comparison": {
+        "missing": [],
+        "extra": [],
+        "changed": {},
+        "order_changed": false,
+        "compatible": true
+      },
+      "description": null,
+      "expires": "2027-01-17 17:59:15.877000+00:00"
+    },
+    "news": {
+      "exists": true,
+      "table_id": "seoul-place-docent-514906.seoul_history.rawv2_news_15dcc4c58945",
+      "metadata_rows": 25085,
+      "bytes": 60561365,
+      "table_type": "TABLE",
+      "schema_comparison": {
+        "missing": [],
+        "extra": [],
+        "changed": {},
+        "order_changed": false,
+        "compatible": true
+      },
+      "description": null,
+      "expires": "2027-01-17 17:59:23.564000+00:00"
+    },
+    "photos": {
+      "exists": true,
+      "table_id": "seoul-place-docent-514906.seoul_history.rawv2_photos_15dcc4c58945",
+      "metadata_rows": 74836,
+      "bytes": 330830006,
+      "table_type": "TABLE",
+      "schema_comparison": {
+        "missing": [],
+        "extra": [],
+        "changed": {},
+        "order_changed": false,
+        "compatible": true
+      },
+      "description": null,
+      "expires": "2027-01-17 17:59:48.282000+00:00"
+    },
+    "videos": {
+      "exists": true,
+      "table_id": "seoul-place-docent-514906.seoul_history.rawv2_videos_15dcc4c58945",
+      "metadata_rows": 4612,
+      "bytes": 87333976,
+      "table_type": "TABLE",
+      "schema_comparison": {
+        "missing": [],
+        "extra": [],
+        "changed": {},
+        "order_changed": false,
+        "compatible": true
+      },
+      "description": null,
+      "expires": "2027-01-17 17:59:56.942000+00:00"
+    },
+    "places": {
+      "exists": true,
+      "table_id": "seoul-place-docent-514906.seoul_history.rawv2_places_15dcc4c58945",
+      "metadata_rows": 22306,
+      "bytes": 10900603,
+      "table_type": "TABLE",
+      "schema_comparison": {
+        "missing": [],
+        "extra": [],
+        "changed": {},
+        "order_changed": false,
+        "compatible": true
+      },
+      "description": null,
+      "expires": "2027-01-17 18:00:00.885000+00:00"
+    },
+    "record_place_links": {
+      "exists": true,
+      "table_id": "seoul-place-docent-514906.seoul_history.rawv2_record_place_links_15dcc4c58945",
+      "metadata_rows": 163345,
+      "bytes": 111483975,
+      "table_type": "TABLE",
+      "schema_comparison": {
+        "missing": [],
+        "extra": [],
+        "changed": {},
+        "order_changed": false,
+        "compatible": true
+      },
+      "description": null,
+      "expires": "2027-01-17 18:00:13.884000+00:00"
+    }
+  },
+  "schema_reusable": true,
+  "queries": {
+    "content": {
+      "estimated_bytes": 610404065,
+      "executed": true,
+      "job_id": "70866a96-6f5b-417a-88bb-647cbdf8565d",
+      "rows": [
+        {
+          "kind": "places",
+          "row_count": 22306,
+          "wrong_batch": 0,
+          "wrong_filename": 0,
+          "distinct_row_numbers": 22306,
+          "first_row": 2,
+          "last_row": 22307,
+          "null_source_rows": 0,
+          "invalid_row_hash": 0,
+          "source_row_hash_digest": "f83550124e1f0250eb9500324243e362aaf75d1ee948ada2a138f141964e851e",
+          "source_values_digest": "cf1674eed6d7fdcd87aa2fad7d156507309ac91886405dbcf5dc53ed7f242193"
+        },
+        {
+          "kind": "news",
+          "row_count": 25085,
+          "wrong_batch": 0,
+          "wrong_filename": 0,
+          "distinct_row_numbers": 25085,
+          "first_row": 2,
+          "last_row": 25086,
+          "null_source_rows": 0,
+          "invalid_row_hash": 0,
+          "source_row_hash_digest": "d216dc2e1a1c6860fed0588bf612f7ae2417c193352bb4b73836b513f94ebc53",
+          "source_values_digest": "2c18ce584cbe6ba1bcb81b7d3b52d29aec9b9a4a9e94b8bc2da156fafed57bfa"
+        },
+        {
+          "kind": "videos",
+          "row_count": 4612,
+          "wrong_batch": 0,
+          "wrong_filename": 0,
+          "distinct_row_numbers": 4612,
+          "first_row": 2,
+          "last_row": 4613,
+          "null_source_rows": 0,
+          "invalid_row_hash": 0,
+          "source_row_hash_digest": "5934019ffbede8844b5fe9f790938cd3d3d275b14941385afdd4f6772c902e8d",
+          "source_values_digest": "e91dd78d0ebe28552525fc7fc81d3f47e250d15ef5d5743adc2bbf04905bd777"
+        },
+        {
+          "kind": "documents",
+          "row_count": 1336,
+          "wrong_batch": 0,
+          "wrong_filename": 0,
+          "distinct_row_numbers": 1336,
+          "first_row": 2,
+          "last_row": 1337,
+          "null_source_rows": 0,
+          "invalid_row_hash": 0,
+          "source_row_hash_digest": "a8e09e4d3d83110d4df002ec3eb56bca45b5589bd1c1b700699371735fe7d5d9",
+          "source_values_digest": "40a7b0aa655088e800df1f09941be4e00db668d8183a5769e02bb90e2adf43b4"
+        },
+        {
+          "kind": "record_place_links",
+          "row_count": 163345,
+          "wrong_batch": 0,
+          "wrong_filename": 0,
+          "distinct_row_numbers": 163345,
+          "first_row": 2,
+          "last_row": 163346,
+          "null_source_rows": 0,
+          "invalid_row_hash": 0,
+          "source_row_hash_digest": "91c6e8a573b0bde4f62e7485f17c91348cbf7afe37dcfab0a649d212379f2930",
+          "source_values_digest": "c79e6fc03db4a4c8f3afa9618b263c0f43853eb6026d0fac6d65a70dd20bfe59"
+        },
+        {
+          "kind": "photos",
+          "row_count": 74836,
+          "wrong_batch": 0,
+          "wrong_filename": 0,
+          "distinct_row_numbers": 74836,
+          "first_row": 2,
+          "last_row": 74837,
+          "null_source_rows": 0,
+          "invalid_row_hash": 0,
+          "source_row_hash_digest": "6d942862a16c3964b64fe8551859035b9de59a472bd4395fd711df6ad52d4f34",
+          "source_values_digest": "fddae929923bbc3f6091ded8d0d4f7acf2791cdcaa41abde16abed51174113eb"
+        }
+      ],
+      "processed_bytes": 610404065,
+      "billed_bytes": 611319808
+    },
+    "relations": {
+      "estimated_bytes": 14148448,
+      "executed": true,
+      "job_id": "087c1113-544e-4d6a-84b1-d449a1dd050d",
+      "rows": [
+        {
+          "records": 105869,
+          "duplicate_record_ids": 0,
+          "blank_record_ids": 0,
+          "duplicate_place_ids": 0,
+          "blank_place_ids": 0,
+          "missing_record_refs": 0,
+          "missing_nonblank_place_refs": 0,
+          "blank_link_place_ids": 2,
+          "unsafe_blank_links": 0,
+          "duplicate_link_pairs": 2,
+          "relation_counts": "[{\"relation_type\":\"DISTRICT_CONTEXT\",\"n\":79903},{\"relation_type\":\"EXACT_SITE\",\"n\":2},{\"relation_type\":\"NEARBY\",\"n\":1614},{\"relation_type\":\"UNCERTAIN\",\"n\":81826}]"
+        }
+      ],
+      "processed_bytes": 14148448,
+      "billed_bytes": 62914560
+    }
+  },
+  "total_estimated_bytes": 624552513,
+  "original_zip_sha256_verified": "15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90",
+  "validation_errors": [],
+  "reusable": true,
+  "comparison_note": "Revalidated saved BigQuery result digests after correcting local hex serialization to lowercase; no repeat cloud query.",
+  "local_original_digests": {
+    "documents": {
+      "source_row_hash_digest": "a8e09e4d3d83110d4df002ec3eb56bca45b5589bd1c1b700699371735fe7d5d9",
+      "source_values_digest": "40a7b0aa655088e800df1f09941be4e00db668d8183a5769e02bb90e2adf43b4"
+    },
+    "news": {
+      "source_row_hash_digest": "d216dc2e1a1c6860fed0588bf612f7ae2417c193352bb4b73836b513f94ebc53",
+      "source_values_digest": "2c18ce584cbe6ba1bcb81b7d3b52d29aec9b9a4a9e94b8bc2da156fafed57bfa"
+    },
+    "photos": {
+      "source_row_hash_digest": "6d942862a16c3964b64fe8551859035b9de59a472bd4395fd711df6ad52d4f34",
+      "source_values_digest": "fddae929923bbc3f6091ded8d0d4f7acf2791cdcaa41abde16abed51174113eb"
+    },
+    "videos": {
+      "source_row_hash_digest": "5934019ffbede8844b5fe9f790938cd3d3d275b14941385afdd4f6772c902e8d",
+      "source_values_digest": "e91dd78d0ebe28552525fc7fc81d3f47e250d15ef5d5743adc2bbf04905bd777"
+    },
+    "places": {
+      "source_row_hash_digest": "f83550124e1f0250eb9500324243e362aaf75d1ee948ada2a138f141964e851e",
+      "source_values_digest": "cf1674eed6d7fdcd87aa2fad7d156507309ac91886405dbcf5dc53ed7f242193"
+    },
+    "record_place_links": {
+      "source_row_hash_digest": "91c6e8a573b0bde4f62e7485f17c91348cbf7afe37dcfab0a649d212379f2930",
+      "source_values_digest": "c79e6fc03db4a4c8f3afa9618b263c0f43853eb6026d0fac6d65a70dd20bfe59"
+    }
+  },
+  "candidate_select_dry_runs": [
+    {
+      "view": "`seoul-place-docent-514906.seoul_history.v2_records_15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90`",
+      "select_valid": true,
+      "estimated_bytes": 488019487,
+      "executed": false
+    },
+    {
+      "view": "`seoul-place-docent-514906.seoul_history.v2_places_15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90`",
+      "select_valid": true,
+      "estimated_bytes": 10900603,
+      "executed": false
+    },
+    {
+      "view": "`seoul-place-docent-514906.seoul_history.v2_links_15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90`",
+      "select_valid": true,
+      "estimated_bytes": 111483975,
+      "executed": false
+    },
+    {
+      "view": "`seoul-place-docent-514906.seoul_history.v2_relation_audit_15dcc4c5894501266afb2062e7ba8eb4dd9f12970b7f2309e8c14410b80bae90`",
+      "select_valid": true,
+      "estimated_bytes": 80080309,
+      "executed": false
+    }
+  ]
+}

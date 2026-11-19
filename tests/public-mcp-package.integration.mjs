@@ -8,11 +8,12 @@ const data=r=>JSON.parse(r.result.content[0].text);
 test('deployable package resolves photo coordinates and prepares and validates evidence without a model',async()=>{
  const originalCwd=process.cwd();process.chdir(fileURLToPath(new URL('../.mcp-public/',import.meta.url)));
  const saved={...process.env},original=globalThis.fetch,info=console.info;const calls=[];console.info=()=>{};
- process.env.JUSO_API_KEY='fixture-key';process.env.KAKAO_REST_API_KEY='fixture-map-key';process.env.OPENAI_API_KEY='must-not-be-used';delete process.env.CLOUDFLARE_ACCOUNT_ID;
+ process.env.JUSO_API_KEY='fixture-key';process.env.MCP_ADDRESS_SIGNING_SECRET='fixture-signing-secret-that-is-long-enough';process.env.KAKAO_REST_API_KEY='fixture-map-key';process.env.OPENAI_API_KEY='must-not-be-used';delete process.env.CLOUDFLARE_ACCOUNT_ID;
  const address={roadAddr:'서울특별시 종로구 사직로 161',jibunAddr:'서울특별시 종로구 세종로 1-1',siNm:'서울특별시',sggNm:'종로구',emdNm:'세종로',admCd:'1111011900',bdMgtSn:'fixture',bdNm:'경복궁',lnbrMnnm:'1',lnbrSlno:'1',mtYn:'0',zipNo:'03045'};
  globalThis.fetch=async url=>{
   const request=new URL(String(url));calls.push(request.hostname);
   if(request.hostname==='files.oaiusercontent.com')return new Response(gpsJpeg({lat:[37,34,48],lon:[126,58,12]}));
+  if(request.hostname==='seoul-place-docent-steel.vercel.app')return Response.json({candidates:[{...address,token:'upstream-token-is-ignored'}],total:1,page:1,nonSeoulCount:0});
   if(request.hostname==='business.juso.go.kr')return Response.json({results:{common:{errorCode:'0',totalCount:'1'},juso:[address]}});
   assert.equal(request.hostname,'dapi.kakao.com','only address providers are allowed');
   assert.ok(Math.abs(Number(request.searchParams.get('x'))-126.97)<1e-9);
@@ -39,17 +40,18 @@ test('deployable package resolves photo coordinates and prepares and validates e
   const located=await call('resolve_photo_location',{latitude:37.58,longitude:126.97});
   assert.equal(located.status,'confirm_address');assert.equal(located.needsConfirmation,true);
   assert.equal(located.candidates.length,1);
-  const token=located.candidates[0].token,question='동네 역사를 알려줘';
+  const searched=await call('search_place',{query:'사직로 161'});
+  assert.equal(searched.candidates.length,1);assert.notEqual(searched.candidates[0].token,'upstream-token-is-ignored');
+  const token=searched.candidates[0].token,question='동네 역사를 알려줘';
   const packet=await call('prepare_place_answer',{token,question,questionType:'동네 역사'});
   assert.equal(packet.mode,'client_ai');assert.equal(packet.generation.serverAiCalls,0);
   assert.ok(packet.neighborhood.records.length>0);
-  assert.equal(packet.visuals.photoCount,packet.visuals.photos.length);
-  assert.ok(packet.visuals.photos.every(p=>p.imageUrl&&p.evidenceId));
-  assert.ok(packet.videos.records.length>0);assert.ok(packet.videos.records.every(r=>r.sources.length>0&&Array.isArray(r.verifiedSegments)));
-  assert.ok(packet.videos.records.every(record=>record.segmentStatus!=='unavailable'));
+  assert.equal(packet.visuals.photoCount,0);assert.equal(packet.visuals.photos.length,0);
+  assert.equal(packet.videos.records.length,0);
+  assert.doesNotMatch(JSON.stringify(packet),/원문 확인·검토 대기/);
   const record=packet.neighborhood.records[0];
-  const validated=await call('validate_place_answer',{token,question,answer:{question_type:'동네 역사',paragraphs:[{heading:'기록',text:'자료가 남아 있어요.',evidence_ids:[record.id]}],held:[]}});
+  const validated=await call('validate_place_answer',{token,question,answer:{question_type:'동네 역사',paragraphs:[{heading:record.title.slice(0,40),text:record.text||record.title,evidence_ids:[record.id]}],held:[]}});
   assert.equal(validated.valid,true);
-  assert.deepEqual(calls.sort(),['business.juso.go.kr','business.juso.go.kr','dapi.kakao.com','dapi.kakao.com','dapi.kakao.com','dapi.kakao.com','files.oaiusercontent.com']);
+  assert.deepEqual(calls.sort(),['business.juso.go.kr','business.juso.go.kr','dapi.kakao.com','dapi.kakao.com','dapi.kakao.com','dapi.kakao.com','files.oaiusercontent.com','seoul-place-docent-steel.vercel.app']);
  }finally{process.chdir(originalCwd);globalThis.fetch=original;console.info=info;for(const k of Object.keys(process.env))if(!(k in saved))delete process.env[k];Object.assign(process.env,saved);}
 });

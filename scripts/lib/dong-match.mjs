@@ -21,6 +21,28 @@ export function matchDongs(text,patterns,onlyDistrict){
   const hits=patterns.filter(p=>(!onlyDistrict||p.district===onlyDistrict)&&p.names.some(n=>has(text,n))&&(!p.needsDistrict||onlyDistrict===p.district||text.includes(p.district)));
   const exact=hits.filter(p=>has(text,p.dong));return (exact.length?exact:hits).slice(0,6);
 }
+/** Link archive photos from explicit source location/title; use description only when the
+ * same source sentence ties the title's subject to a dong as the photographed scene. */
+export function matchMuseumPhotoDongs(item,patterns){
+  const byPlace=matchDongs(item.place||'',patterns);
+  const byTitle=matchDongs(item.title||'',patterns);
+  const placeDistricts=patterns.map(p=>p.district).filter((d,i,a)=>a.indexOf(d)===i&&(item.place||'').includes(d));
+  if(byPlace.length&&byTitle.length&&!byPlace.some(a=>byTitle.some(b=>a.district===b.district&&a.dong===b.dong)))return {dongs:[],conflict:true,basis:'conflicting_place_and_title'};
+  if(placeDistricts.length&&byTitle.some(p=>!placeDistricts.includes(p.district)))return {dongs:[],conflict:true,basis:'title_outside_source_district'};
+  if(byPlace.length)return {dongs:byPlace,conflict:false,basis:'source_place'};
+  if(byTitle.length)return {dongs:byTitle,conflict:false,basis:'source_title'};
+  if(placeDistricts.length===1){
+    const anchors=(item.title||'').match(/[가-힣A-Za-z0-9]{3,}/g)||[];
+    const sentences=(item.description||'').split(/[.!?。\n]+/);
+    const described=patterns.filter(p=>p.district===placeDistricts[0]&&p.names.some(name=>sentences.some(sentence=>{
+      if(!has(sentence,name))return false;
+      return anchors.some(anchor=>anchor.length>=3&&sentence.includes(anchor));
+    })));
+    const exact=described.filter(p=>has(item.description||'',p.dong));
+    if(exact.length)return {dongs:exact.slice(0,6),conflict:false,basis:'source_description_title_anchor'};
+  }
+  return {dongs:[],conflict:false,basis:'unmatched'};
+}
 /** Spread at most `cap` photos evenly through time as district background. */
 export function backgroundPick(list,cap=40){const s=[...list].sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));const step=Math.max(1,s.length/cap);const out=[];for(let k=0;k<s.length&&out.length<cap;k+=step)out.push(s[Math.floor(k)]);return out;}
 /**

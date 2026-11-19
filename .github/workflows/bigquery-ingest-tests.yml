@@ -1,0 +1,26 @@
+name: BigQuery local ingestion and mock tests
+on:
+  pull_request:
+    paths:
+      - "scripts/bigquery/**"
+      - "tests/test_bigquery_v2*.py"
+      - "scripts/history_catalog_utils.py"
+      - "tests/test_bigquery_ingest.py"
+      - ".github/workflows/bigquery-ingest-tests.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sandbox-ingest-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Run BigQuery ingestion validation and mock load-job tests
+        run: |
+          python -m unittest discover -s tests -p 'test_bigquery_ingest.py'
+          python scripts/bigquery/ingest.py
+          python -m unittest discover -s tests -p 'test_bigquery_v2*.py'

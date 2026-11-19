@@ -95,3 +95,4 @@ body{background:var(--docent-paper)}
 
 .docent-input-options button{min-height:44px;padding:10px 14px}
 .notice[aria-label="동네 위치 확인"] button{min-height:44px;padding:10px 14px;margin:4px}
+.docent-place-records{padding:36px 12px}.docent-place-records>.overline{display:block;text-align:center;color:#52745a;font-size:10px;letter-spacing:1.5px}.docent-place-records>h3,.docent-place-records>p{text-align:center}.docent-place-records>h3{font-size:clamp(22px,3vw,30px);font-weight:600;margin:14px 0}.docent-place-records>p{max-width:620px;margin:0 auto 34px;color:#64705f;font-size:12px;line-height:1.9}
